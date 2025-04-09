@@ -6,24 +6,14 @@ import { scoreSignals } from '@/lib/score'
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const klines = await getLatestKlines('ETH_USDT', '1m', 100)
-
-    if (!klines || klines.length === 0) {
-      console.warn('⚠️ Klines 为空')
-      return res.status(200).json({
-        time: null,
-        price: null,
-        score: null,
-        recommendation: '无数据',
-        take_profit: null,
-        stop_loss: null,
-        reasons: ['未能获取行情数据'],
-      })
-    }
+    console.log('✅ 原始 klines 最后1条:', klines[klines.length - 1])
 
     const enriched = calculateIndicators(klines)
+    console.log('✅ enriched 最后1条:', enriched[enriched.length - 1])
+
     const latest = enriched[enriched.length - 1]
 
-    if (!latest || !latest.close) {
+    if (!latest || typeof latest.close !== 'number' || isNaN(latest.close)) {
       console.warn('⚠️ latest 数据无效', latest)
       return res.status(200).json({
         time: null,
