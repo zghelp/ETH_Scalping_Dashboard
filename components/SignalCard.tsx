@@ -1,10 +1,21 @@
 import React from 'react'
-import type { SignalProps } from '@/types'
-
+import type { SignalProps } from '@/lib/types'
+import { useEffect, useState } from 'react'
+import { useSignal } from '@/lib/signal'
 export default function SignalCard(props: SignalProps) {
   const timeStr = props.time
     ? new Date(props.time).toLocaleString('zh-CN', { hour12: false })
     : '--'
+
+  const [signalData, setSignalData] = useState(null)
+
+  useEffect(() => {
+    const fetchSignalData = async () => {
+      const data = await useSignal(props.signalId)
+      setSignalData(data)
+    }
+    fetchSignalData()
+  }, [props.signalId])
 
   return (
     <div className="p-4 rounded border bg-white shadow max-w-2xl mx-auto mt-6">
