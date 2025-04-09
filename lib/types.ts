@@ -8,5 +8,7 @@ export interface CandleData {
     EMA5: number
     EMA20: number
     RSI: number
+    ETH_close: number
+    BTC_close: number
   }
   
