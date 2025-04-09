@@ -1,32 +1,43 @@
-interface SignalProps {
-  time: number
-  price: number
-  long_score: number
-  short_score: number
-  take_profit: number
-  stop_loss: number
-  isLoading: boolean
-  error: any
-}
+import React from 'react'
+import type { SignalProps } from '@/types'
 
 export default function SignalCard(props: SignalProps) {
-  if (props.isLoading) return <div className="p-4">📡 正在分析最新行情...</div>
-  if (props.error) return <div className="p-4 text-red-500">❌ 获取信号失败</div>
-
   const timeStr = props.time
     ? new Date(props.time).toLocaleString('zh-CN', { hour12: false })
     : '--'
 
   return (
-    <div className="bg-white shadow-md rounded p-4 mt-4">
-      <h2 className="text-lg font-semibold mb-2">📊 策略评分与信号明细</h2>
-      <p className="text-sm text-gray-500 mb-2">🕒 数据时间：{timeStr}</p>
-      <div className="space-y-1 text-sm">
-        <p>📈 当前价格：${props.price}</p>
-        <p>🟢 多头评分：{props.long_score}</p>
-        <p>🔴 空头评分：{props.short_score}</p>
-        <p>🎯 策略止盈价：${props.take_profit}</p>
-        <p>🛡️ 策略止损价：${props.stop_loss}</p>
+    <div className="p-4 rounded border bg-white shadow max-w-2xl mx-auto mt-6">
+      {/* 顶部信息 */}
+      <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-2">
+        <div className="text-sm text-gray-500">数据时间：{timeStr}</div>
+        <div className="text-xl font-semibold text-black">
+          当前价格：${props.price?.toFixed(2) ?? '--'}
+        </div>
+      </div>
+
+      {/* 策略建议 */}
+      <div className="mb-4 p-3 rounded bg-gray-100">
+        <div className="text-sm font-semibold mb-1">📌 当前建议</div>
+        <div className="text-lg font-bold text-green-600">
+          {props.recommendation ?? '建议生成中...'}
+        </div>
+        <ul className="list-disc list-inside text-sm text-gray-700 mt-1">
+          {props.recommendationReasons?.map((r, i) => (
+            <li key={i}>{r}</li>
+          ))}
+        </ul>
+      </div>
+
+      {/* 评分与信号 */}
+      <div className="text-sm">
+        <div className="font-semibold mb-2">🎯 策略评分与信号明细</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-700">
+          <div>📈 多头评分：{props.long_score}</div>
+          <div>📉 空头评分：{props.short_score}</div>
+          <div>🎯 策略止盈价：${props.take_profit?.toFixed(2) ?? '--'}</div>
+          <div>🚨 策略止损价：${props.stop_loss?.toFixed(2) ?? '--'}</div>
+        </div>
       </div>
     </div>
   )
