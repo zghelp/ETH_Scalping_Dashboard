@@ -1,4 +1,5 @@
 export function calculateIndicators(data: any[]) {
+  // 计算 EMA
   const ema = (arr: number[], span: number) => {
     const k = 2 / (span + 1)
     return arr.reduce((acc, price, idx) => {
@@ -9,10 +10,11 @@ export function calculateIndicators(data: any[]) {
     }, [] as number[])
   }
 
-  const closes = data.map(d => d.close)
+  const closes = data.map(d => d.close ?? 0)
   const ema5 = ema(closes, 5)
   const ema20 = ema(closes, 20)
 
+  // 计算 RSI
   const rsi = (() => {
     const result: number[] = []
     for (let i = 14; i < closes.length; i++) {
@@ -27,8 +29,9 @@ export function calculateIndicators(data: any[]) {
     return Array(closes.length - result.length).fill(null).concat(result)
   })()
 
+  // ✅ 保留所有原始字段，加入指标
   return data.map((d, i) => ({
-    ...d,               // 保留原始字段，如 close、open 等
+    ...d, // 保留 close 等原始字段！
     EMA5: ema5[i],
     EMA20: ema20[i],
     RSI: rsi[i],
