@@ -32,6 +32,7 @@ export default function Home() {
           }}
         />
         <SignalCard
+          time={data.time}
           price={data.price}
           long_score={data.long_score}
           short_score={data.short_score}
