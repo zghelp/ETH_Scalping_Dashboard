@@ -31,7 +31,16 @@ export default function Home() {
             reasons: data.short_reasons
           }}
         />
-        <SignalCard signal={data} isLoading={isLoading} error={error} />
+        <SignalCard
+          price={data.price}
+          long_score={data.long_score}
+          short_score={data.short_score}
+          take_profit={data.take_profit}
+          stop_loss={data.stop_loss}
+          isLoading={isLoading}
+          error={error}
+        />
+
         <p className="text-center text-xs text-gray-500 mt-6">自动刷新每60秒 | Powered by Gate.io API</p>
       </main>
     </div>

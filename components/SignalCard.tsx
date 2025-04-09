@@ -1,13 +1,13 @@
 import React from 'react'
 
 interface SignalProps {
-  time: number
-  price: number | null
-  score: number | null
-  recommendation: string
-  take_profit: number | null
-  stop_loss: number | null
-  reasons: string[]
+  price: number
+  long_score: number
+  short_score: number
+  take_profit: number
+  stop_loss: number
+  isLoading: boolean
+  error: any
 }
 
 export default function SignalCard(props: SignalProps) {
