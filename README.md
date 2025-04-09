@@ -32,7 +32,7 @@ eth-scalping-dashboard/
 ├── pages/ # 页面与API逻辑 
 │ ├── index.tsx # 主界面：展示策略建议 
 │ └── api/ 
-│ └── signal.ts # 核心API：打分与建议生成 
+│ └── signal.ts # 核心API：打分与建议生成 11
 ├── lib/ # 指标与打分逻辑 
 │ ├── gateio.ts 
 │ ├── indicators.ts 
@@ -72,3 +72,4 @@ Fork 本仓库或下载源码
 
 📄 License
 MIT License. Feel free to use and expand under open-source spirit.
+1
