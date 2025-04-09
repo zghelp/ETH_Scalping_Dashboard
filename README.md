@@ -72,4 +72,3 @@ Fork 本仓库或下载源码
 
 📄 License
 MIT License. Feel free to use and expand under open-source spirit.
-1
