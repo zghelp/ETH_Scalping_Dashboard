@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { getLatestKlines } from '../../lib/gateio'
-import { calculateIndicators } from '../../lib/indicators'
-import { scoreSignals } from '../../lib/score'
+import { getLatestKlines } from '@/lib/gateio'
+import { calculateIndicators } from '@/lib/indicators'
+import { scoreSignals } from '@/lib/score'
 
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
