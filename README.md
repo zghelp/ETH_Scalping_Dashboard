@@ -44,8 +44,6 @@ eth-scalping-dashboard/
 ├── .env.local.example # 环境变量示例
 
 
----
-
 ## 🧪 环境变量配置
 
 请在 `.env.local` 或 Vercel 的「Environment Variables」中设置以下内容：
