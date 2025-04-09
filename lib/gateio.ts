@@ -22,4 +22,7 @@ export async function getLatestKlines(symbol: string, interval: string, limit = 
       close: isNaN(close) ? 0 : close,
       high: isNaN(high) ? 0 : high,
       low: isNaN(low) ? 0 : low,
-      open: isNaN(open) ? 0
+      open: isNaN(open) ? 0 : open,
+    }
+  })
+}
