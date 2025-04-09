@@ -28,7 +28,7 @@ export function calculateIndicators(data: any[]) {
   })()
 
   return data.map((d, i) => ({
-    ...d,
+    ...d,               // 保留原始字段，如 close、open 等
     EMA5: ema5[i],
     EMA20: ema20[i],
     RSI: rsi[i],
