@@ -18,6 +18,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       take_profit: +(latest.close + 10).toFixed(2),
       stop_loss: +(latest.close - 10).toFixed(2),
 
+      // 🔽 新增指标字段
+      ema5: latest.EMA5 ?? null,
+      ema20: latest.EMA20 ?? null,
+      rsi: latest.RSI ?? null,
+
+      // ✅ 保持原逻辑不变
       long_score: longSignal.score,
       long_signalTypes: longSignal.types,
       long_reasons: longSignal.reasons,
