@@ -1,6 +1,7 @@
 import React from 'react'
 
 interface SignalProps {
+  time: number
   price: number
   long_score: number
   short_score: number
@@ -9,6 +10,8 @@ interface SignalProps {
   isLoading: boolean
   error: any
 }
+
+
 
 export default function SignalCard(props: SignalProps) {
   const timeStr = props.time
