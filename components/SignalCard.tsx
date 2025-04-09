@@ -1,5 +1,3 @@
-import React from 'react'
-
 interface SignalProps {
   time: number
   price: number
@@ -11,61 +9,25 @@ interface SignalProps {
   error: any
 }
 
-
-
 export default function SignalCard(props: SignalProps) {
+  if (props.isLoading) return <div className="p-4">📡 正在分析最新行情...</div>
+  if (props.error) return <div className="p-4 text-red-500">❌ 获取信号失败</div>
+
   const timeStr = props.time
     ? new Date(props.time).toLocaleString('zh-CN', { hour12: false })
     : '--'
 
   return (
-    <div className="w-full max-w-xl bg-white rounded-lg shadow-md p-5">
-      <p className="text-sm text-gray-400">🕒 更新时间：{timeStr}</p>
-
-      <div className="mt-2 flex justify-between items-center">
-        <p className="text-xl font-semibold">
-          当前价格：${props.price?.toFixed(2) ?? '--'}
-        </p>
-        <span
-          className={`px-3 py-1 rounded-full text-white text-sm font-bold ${getColor(
-            props.recommendation
-          )}`}
-        >
-          {props.recommendation ?? '--'}
-        </span>
-      </div>
-
-      <div className="mt-2 text-sm text-gray-700">
-        📊 策略评分：{props.score ?? '--'} / 8
-      </div>
-
-      <div className="mt-3 text-sm text-gray-700">
-        <p>
-          🎯 建议止盈：<strong>${props.take_profit?.toFixed(2) ?? '--'}</strong>
-        </p>
-        <p>
-          🛡️ 建议止损：<strong>${props.stop_loss?.toFixed(2) ?? '--'}</strong>
-        </p>
-      </div>
-
-      <div className="mt-4">
-        <p className="font-semibold text-gray-800">📌 信号明细：</p>
-        <ul className="list-disc pl-5 text-sm mt-1 text-gray-600 space-y-1">
-          {props.reasons?.length > 0 ? (
-            props.reasons.map((reason, idx) => (
-              <li key={idx}>{reason}</li>
-            ))
-          ) : (
-            <li>--</li>
-          )}
-        </ul>
+    <div className="bg-white shadow-md rounded p-4 mt-4">
+      <h2 className="text-lg font-semibold mb-2">📊 策略评分与信号明细</h2>
+      <p className="text-sm text-gray-500 mb-2">🕒 数据时间：{timeStr}</p>
+      <div className="space-y-1 text-sm">
+        <p>📈 当前价格：${props.price}</p>
+        <p>🟢 多头评分：{props.long_score}</p>
+        <p>🔴 空头评分：{props.short_score}</p>
+        <p>🎯 策略止盈价：${props.take_profit}</p>
+        <p>🛡️ 策略止损价：${props.stop_loss}</p>
       </div>
     </div>
   )
-}
-
-function getColor(rec: string) {
-  if (rec === '做多') return 'bg-green-500'
-  if (rec === '做空') return 'bg-red-500'
-  return 'bg-gray-500'
 }
