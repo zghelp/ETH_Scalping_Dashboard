@@ -29,18 +29,20 @@ export default function SignalDecision({ long, short }: Props) {
   }, [position, long, short])
 
   return (
-    <div className="p-4 rounded border my-6 bg-white">
-      <h2 className="text-lg font-semibold mb-2">📌 当前持仓状态</h2>
-      <div className="flex space-x-2 mb-4">
-        {(['空仓', '持多', '持空'] as PositionStatus[]).map((status) => (
-          <button
-            key={status}
-            className={\`px-4 py-2 rounded \${position === status ? 'bg-blue-600 text-white' : 'bg-gray-200'}\`}
-            onClick={() => setPosition(status)}
-          >
-            {status}
-          </button>
-        ))}
+    <div>
+      <div className="p-4 rounded border my-6 bg-white">
+        <h2 className="text-lg font-semibold mb-2">📌 当前持仓状态</h2>
+        <div className="flex space-x-2 mb-4">
+          {(['空仓', '持多', '持空'] as PositionStatus[]).map((status) => (
+            <button
+              key={status}
+              className={`px-4 py-2 rounded ${position === status ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+              onClick={() => setPosition(status)}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="p-4 border rounded bg-gray-50">
         <h3 className="text-md font-semibold">✅ 建议操作：{decision.action}</h3>
@@ -49,7 +51,7 @@ export default function SignalDecision({ long, short }: Props) {
         </ul>
       </div>
     </div>
-  )
+  )  
 }
 
 function generateRecommendation(position: PositionStatus, long: SignalSummary, short: SignalSummary): Recommendation {
