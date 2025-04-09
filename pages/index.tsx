@@ -1,25 +1,39 @@
 import Head from 'next/head'
-import SignalCard from '@/components/SignalCard'
 import useSWR from 'swr'
+import SignalCard from '@/components/SignalCard'
+import SignalDecision from '@/components/SignalDecision'
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export default function Home() {
-  const { data, error } = useSWR('/api/signal', fetcher, { refreshInterval: 60000 }) // 每分钟自动刷新
+  const { data, isLoading, error } = useSWR('/api/signal', fetcher, {
+    refreshInterval: 60000
+  })
+
+  if (!data) return <div className="p-4">加载中...</div>
 
   return (
-    <>
+    <div className="min-h-screen bg-gray-100 py-8 px-4">
       <Head>
-        <title>ETH 策略助手</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ETH Scalping 策略助手</title>
       </Head>
-      <main className="min-h-screen bg-gray-100 p-4 flex flex-col items-center">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">🚀 ETH Scalping 策略助手</h1>
-        {error && <p className="text-red-500">加载失败，请稍后重试</p>}
-        {!data && <p className="text-gray-600">加载中...</p>}
-        {data && <SignalCard {...data} />}
-        <footer className="text-sm text-gray-400 mt-6">自动刷新每60秒 | Powered by Gate.io API</footer>
+      <main className="max-w-xl mx-auto">
+        <h1 className="text-2xl font-bold mb-4 text-center">🚀 ETH Scalping 策略助手</h1>
+        <SignalDecision
+          long={{
+            score: data.long_score,
+            signalTypes: data.long_signalTypes,
+            reasons: data.long_reasons
+          }}
+          short={{
+            score: data.short_score,
+            signalTypes: data.short_signalTypes,
+            reasons: data.short_reasons
+          }}
+        />
+        <SignalCard signal={data} isLoading={isLoading} error={error} />
+        <p className="text-center text-xs text-gray-500 mt-6">自动刷新每60秒 | Powered by Gate.io API</p>
       </main>
-    </>
+    </div>
   )
 }

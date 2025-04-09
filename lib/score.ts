@@ -1,45 +1,53 @@
-export function scoreSignals(data: any[], btcPrice?: number) {
+import { CandleData } from './types'
+
+export function scoreSignals(data: CandleData[], direction: 'long' | 'short') {
   const latest = data[data.length - 1]
-  let score = 0
   const reasons: string[] = []
+  const types: string[] = []
+  let score = 0
 
-  if (latest.EMA5 > latest.EMA20) {
+  const emaCondition = direction === 'long'
+    ? latest.EMA5 > latest.EMA20
+    : latest.EMA5 < latest.EMA20
+
+  if (emaCondition) {
+    reasons.push('EMA5 与 EMA20 方向共振')
+    types.push('A')
     score += 2
-    reasons.push('✅ EMA5 > EMA20 (+2)')
-  } else {
-    reasons.push('❌ EMA5 ≤ EMA20')
   }
 
-  if (latest.RSI > 50) {
+  const rsiCondition = direction === 'long'
+    ? latest.RSI > 50
+    : latest.RSI < 50
+
+  if (rsiCondition) {
+    reasons.push('RSI 趋势支撑当前方向')
+    types.push('A')
     score += 2
-    reasons.push('✅ RSI > 50 (+2)')
-  } else {
-    reasons.push('❌ RSI ≤ 50')
   }
 
-  if (latest.volume > 0) {
-    reasons.push('✅ 相对稳定无放量')
-  } else {
-    reasons.push('❌ 相对波动无放量')
-  }
-
-  const bodySize = Math.abs(latest.close - latest.open)
-const candleRange = latest.high - latest.low
-
-if (bodySize > candleRange * 0.6) {
-  reasons.push('✅ 实体大阳K线 (+1)')
-  score += 1
-}
-
-  // ✅ 使用真实 BTC 判断
-  if (btcPrice && btcPrice > 0 && latest.close > 0) {
-    reasons.push('✅ BTC同步上涨 (+1)')
+  const volumeSpike = latest.volume > data[data.length - 2].volume * 1.2
+  if (volumeSpike) {
+    reasons.push('出现有效放量')
+    types.push('B')
     score += 1
   }
 
-  return {
-    score,
-    recommendation: score >= 5 ? '做多' : score <= 2 ? '做空' : '不建议开仓',
-    reasons,
+  const longK = (latest.close - latest.open) > Math.abs(latest.open - latest.low) &&
+                (latest.close > latest.open) === (direction === 'long')
+
+  if (longK) {
+    reasons.push('出现实体趋势K线')
+    types.push('B')
+    score += 1
   }
+
+  // 模拟 BTC 同步方向（可扩展为实际数据）
+  if (Math.random() > 0.5) {
+    reasons.push('模拟BTC同步方向 (+1)')
+    types.push('A')
+    score += 1
+  }
+
+  return { score, reasons, types }
 }
