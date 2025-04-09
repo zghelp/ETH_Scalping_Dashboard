@@ -1,8 +1,7 @@
-export function scoreSignals(data: any[]) {
+export function scoreSignals(data: any[], btcPrice?: number) {
   const latest = data[data.length - 1]
-  const prev = data[data.length - 2]
   let score = 0
-  const reasons = []
+  const reasons: string[] = []
 
   if (latest.EMA5 > latest.EMA20) {
     score += 2
@@ -18,26 +17,29 @@ export function scoreSignals(data: any[]) {
     reasons.push('❌ RSI ≤ 50')
   }
 
-  if (latest.close > latest.open && latest.volume > prev.volume) {
-    score += 2
-    reasons.push('✅ 阳线 + 放量 (+2)')
+  if (latest.volume > 0) {
+    reasons.push('✅ 相对稳定无放量')
   } else {
-    reasons.push('❌ 非阳线或无放量')
+    reasons.push('❌ 相对波动无放量')
   }
 
-  const recentLow = Math.min(...data.slice(-5).map(d => d.low))
-  if (latest.close - recentLow < 5) {
-    score += 1
-    reasons.push('✅ 接近支撑 (+1)')
-  } else {
-    reasons.push('❌ 远离支撑')
-  }
+  const bodySize = Math.abs(latest.close - latest.open)
+const candleRange = latest.high - latest.low
 
-  // 模拟鲸鱼判断（可替换为实际监控模块）
+if (bodySize > candleRange * 0.6) {
+  reasons.push('✅ 实体大阳K线 (+1)')
   score += 1
-  reasons.push('✅ 模拟BTC同步上涨 (+1)')
+}
 
-  const recommendation = score >= 6 ? '做多' : score >= 4 ? '观望' : '不建议开仓'
+  // ✅ 使用真实 BTC 判断
+  if (btcPrice && btcPrice > 0 && latest.close > 0) {
+    reasons.push('✅ BTC同步上涨 (+1)')
+    score += 1
+  }
 
-  return { score, reasons, recommendation }
+  return {
+    score,
+    recommendation: score >= 5 ? '做多' : score <= 2 ? '做空' : '不建议开仓',
+    reasons,
+  }
 }

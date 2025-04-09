@@ -1,16 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { getLatestKlines } from '@/lib/gateio'
+import { getLatestKlines, getBTCClosePrice } from '@/lib/gateio'
 import { calculateIndicators } from '@/lib/indicators'
 import { scoreSignals } from '@/lib/score'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const klines = await getLatestKlines('ETH_USDT', '1m', 100)
-    console.log('✅ 原始 klines 最后1条:', klines[klines.length - 1])
+    const btcPrice = await getBTCClosePrice()
 
     const enriched = calculateIndicators(klines)
-    console.log('✅ enriched 最后1条:', enriched[enriched.length - 1])
-
     const latest = enriched[enriched.length - 1]
 
     if (!latest || typeof latest.close !== 'number' || isNaN(latest.close)) {
@@ -28,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('✅ 最新价格:', latest.close)
 
-    const signal = scoreSignals(enriched)
+    const signal = scoreSignals(enriched, btcPrice)
 
     res.status(200).json({
       time: latest.timestamp,

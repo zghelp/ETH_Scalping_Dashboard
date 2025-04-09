@@ -19,3 +19,14 @@ export async function getLatestKlines(symbol: string, interval: string, limit = 
     }
   })
 }
+
+export async function getBTCClosePrice(): Promise<number> {
+  const response = await axios.get(
+    'https://api.gateio.ws/api/v4/futures/usdt/candlesticks',
+    {
+      params: { contract: 'BTC_USDT', interval: '1m', limit: 2 },
+    }
+  )
+  const latest = response.data[response.data.length - 1]
+  return parseFloat(latest.c) || 0
+}

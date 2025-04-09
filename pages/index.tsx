@@ -18,7 +18,7 @@ export default function Home() {
         {error && <p className="text-red-500">加载失败，请稍后重试</p>}
         {!data && <p className="text-gray-600">加载中...</p>}
         {data && <SignalCard {...data} />}
-        <footer className="text-sm text-gray-400 mt-6">自动刷新每60秒 | Powered by Gate.io</footer>
+        <footer className="text-sm text-gray-400 mt-6">自动刷新每60秒 | Powered by Gate.io API</footer>
       </main>
     </>
   )
