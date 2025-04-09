@@ -8,21 +8,14 @@ export async function getLatestKlines(symbol: string, interval: string, limit = 
     }
   )
 
-  return response.data.map((d: any[]) => {
-    const timestamp = parseInt(d[0]) * 1000
-    const volume = parseFloat(d[1])
-    const close = parseFloat(d[2])
-    const high = parseFloat(d[3])
-    const low = parseFloat(d[4])
-    const open = parseFloat(d[5])
-
+  return response.data.map((d: any) => {
     return {
-      timestamp: isNaN(timestamp) ? Date.now() : timestamp,
-      volume: isNaN(volume) ? 0 : volume,
-      close: isNaN(close) ? 0 : close,
-      high: isNaN(high) ? 0 : high,
-      low: isNaN(low) ? 0 : low,
-      open: isNaN(open) ? 0 : open,
+      timestamp: Number(d.t) * 1000,
+      open: parseFloat(d.o),
+      high: parseFloat(d.h),
+      low: parseFloat(d.l),
+      close: parseFloat(d.c),
+      volume: Number(d.v),
     }
   })
 }

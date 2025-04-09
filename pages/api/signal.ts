@@ -26,6 +26,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     }
 
+    console.log('✅ 最新价格:', latest.close)
+
     const signal = scoreSignals(enriched)
 
     res.status(200).json({
