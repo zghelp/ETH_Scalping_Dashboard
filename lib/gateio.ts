@@ -8,24 +8,18 @@ export async function getLatestKlines(symbol: string, interval: string, limit = 
     }
   )
 
-  // 有些环境下 d[0] 是字符串或空，需先确认 parse 成功
   return response.data.map((d: any[]) => {
-    const [
-      timestamp,
-      volume,
-      close,
-      high,
-      low,
-      open,
-    ] = d.map((v) => parseFloat(v))
+    const timestamp = parseInt(d[0]) * 1000
+    const volume = parseFloat(d[1])
+    const close = parseFloat(d[2])
+    const high = parseFloat(d[3])
+    const low = parseFloat(d[4])
+    const open = parseFloat(d[5])
 
     return {
-      timestamp: isNaN(timestamp) ? Date.now() : timestamp * 1000,
+      timestamp: isNaN(timestamp) ? Date.now() : timestamp,
       volume: isNaN(volume) ? 0 : volume,
       close: isNaN(close) ? 0 : close,
       high: isNaN(high) ? 0 : high,
       low: isNaN(low) ? 0 : low,
-      open: isNaN(open) ? 0 : open,
-    }
-  })
-}
+      open: isNaN(open) ? 0
