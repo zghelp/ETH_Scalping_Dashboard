@@ -23,6 +23,7 @@ export default function SignalCard(props: SignalProps) {
     position,
     indicators_1m,
     indicators_15m,
+    market_context, // Add market context
     isLoading,
     error,
     recommendation, // Keep recommendation if still used
@@ -54,16 +55,32 @@ export default function SignalCard(props: SignalProps) {
   return (
     // Add dark mode classes for background, border, text
     <div className="p-4 rounded border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow max-w-3xl mx-auto mt-6 space-y-4 text-gray-900 dark:text-gray-100">
-      {/* Top Info */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-2 border-b pb-2 border-gray-200 dark:border-gray-700">
-        <div className="text-sm text-gray-500 dark:text-gray-400">数据时间: {timeStr}</div>
-        <div className="text-xl font-semibold text-black dark:text-white">
-          当前价格: ${price?.toFixed(2) ?? '--'}
-        </div>
-        {/* Adjust trend colors for dark mode if needed */}
-        <div className={`text-sm ${indicators_15m?.ema15 && price && price > indicators_15m.ema15 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-          15m趋势: {opening_signal?.ema15m_trend ?? '--'} (EMA15: ${indicators_15m?.ema15?.toFixed(2) ?? '--'})
-        </div>
+      {/* Top Info & Market Context */}
+      <div className="border-b pb-3 border-gray-200 dark:border-gray-700 space-y-2">
+         {/* Price & Time Row */}
+         <div className="flex flex-col md:flex-row justify-between items-center gap-2">
+            <div className="text-sm text-gray-500 dark:text-gray-400">数据时间: {timeStr}</div>
+            <div className="text-xl font-semibold text-black dark:text-white">
+              当前价格: ${price?.toFixed(2) ?? '--'}
+            </div>
+            <div className={`text-sm ${indicators_15m?.ema15 && price && price > indicators_15m.ema15 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              15m趋势: {opening_signal?.ema15m_trend ?? '--'} (EMA15: ${indicators_15m?.ema15?.toFixed(2) ?? '--'})
+            </div>
+         </div>
+         {/* Market Context Row */}
+         <div className="flex flex-col md:flex-row justify-between items-center gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
+             <div>
+                 恐慌贪婪指数: <span className="font-medium text-gray-800 dark:text-gray-200">{market_context?.fng_value ?? 'N/A'} ({market_context?.fng_classification ?? 'N/A'})</span>
+             </div>
+             <div>
+                 BTC日线趋势: <span className={`font-medium ${market_context?.btc_daily_trend === 'up' ? 'text-green-500 dark:text-green-400' : market_context?.btc_daily_trend === 'down' ? 'text-red-500 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                     {market_context?.btc_daily_trend ?? 'N/A'}
+                 </span>
+                 {market_context?.btc_daily_ema50 && (
+                     <span className="text-gray-500 dark:text-gray-500"> (EMA50: {market_context.btc_daily_ema50.toFixed(2)})</span>
+                 )}
+             </div>
+         </div>
       </div>
 
       {/* Recommendation (If still used) */}

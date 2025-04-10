@@ -1,22 +1,22 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { FuturesApi, ApiClient } from 'gate-api'; // Corrected import path
-import { getLatestKlines } from '@/lib/gateio'; // Keep using this for K-lines
+import { FuturesApi, ApiClient } from 'gate-api';
+import axios from 'axios'; // Import axios for FNG request
+import { getLatestKlines } from '@/lib/gateio';
 import { calculateIndicators } from '@/lib/indicators';
 import { calculateHoldabilityScore } from '@/lib/holdabilityScore';
-import { scoreSignals as scoreOpeningSignals } from '@/lib/score'; // Rename import for clarity - **Needs update later**
+import { scoreSignals as scoreOpeningSignals } from '@/lib/score';
 import { CandleData } from '@/lib/types';
 
 // Initialize Gate.io API Client
-const client = new ApiClient(); // Correct initialization using 'new'
-// Configure APIv4 key authorization
-client.setApiKeySecret(process.env.GATE_READ_API_KEY!, process.env.GATE_READ_API_SECRET!); // Use env vars
+const client = new ApiClient();
+client.setApiKeySecret(process.env.GATE_READ_API_KEY!, process.env.GATE_READ_API_SECRET!);
 const futuresApi = new FuturesApi(client);
-const settle = 'usdt'; // Settle currency for perpetual contract
-const contract = 'ETH_USDT'; // Contract identifier
+const settle = 'usdt';
+const contract = 'ETH_USDT';
 
-// Helper function to calculate EMA (needed for 15m EMA here)
+// Helper function to calculate EMA
 const calculateEma = (arr: number[], period: number): (number | null)[] => {
-    if (period <= 0 || arr.length === 0) return Array(arr.length).fill(null);
+    if (period <= 0 || arr.length < period) return Array(arr.length).fill(null); // Corrected condition
     const k = 2 / (period + 1);
     const result: (number | null)[] = [];
     let currentEma: number | null = null;
@@ -32,118 +32,136 @@ const calculateEma = (arr: number[], period: number): (number | null)[] => {
                 currentEma = arr[i] * k + currentEma * (1 - k);
                 result.push(currentEma);
             } else {
-                result.push(null);
+                result.push(null); // Should not happen
             }
         }
     }
     return result;
 };
 
+// Helper function to fetch FNG Index
+async function getFngIndex() {
+    try {
+        const response = await axios.get('https://api.alternative.me/fng/?limit=1');
+        if (response.data && response.data.data && response.data.data.length > 0) {
+            const fngData = response.data.data[0];
+            return {
+                value: parseInt(fngData.value, 10),
+                classification: fngData.value_classification,
+            };
+        }
+    } catch (error) {
+        console.error("Error fetching FNG Index:", error);
+    }
+    return { value: null, classification: null }; // Return null on error
+}
+
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
-        // 1. Fetch Position Info from Gate.io
-        let positionInfo = null;
-        try {
-            const positionResult = await futuresApi.getPosition(settle, contract);
-            const pos = positionResult.body;
-            // Log the raw response from Gate.io API to debug
-            console.log("Raw Position Data from Gate.io:", JSON.stringify(pos, null, 2));
-            if (pos && pos.size !== 0) { // Check if there is an open position
-                 positionInfo = {
-                    side: pos.size! > 0 ? 'long' : 'short',
-                    entryPrice: parseFloat(pos.entryPrice || '0'),
-                    liquidationPrice: parseFloat(pos.liqPrice || '0') || null // Handle potential null/empty string
-                 };
-                 // Log the parsed info as well
-                 console.log("Parsed Position Info:", JSON.stringify(positionInfo, null, 2));
-            }
-        } catch (posError: any) {
-            // Handle cases where position doesn't exist (404) or other API errors
-            if (posError.status !== 404) {
-                 console.error("Gate.io Get Position Error:", posError.message);
-                 // Decide if you want to throw or continue without position info
-            }
-             console.log("No active position found or API error fetching position.");
-        }
-
-
-        // 2. Fetch K-line Data (1m ETH, 1m BTC, 15m ETH)
-        const [ethKlines1m, btcKlines1m, ethKlines15m] = await Promise.all([
-            getLatestKlines(contract, '1m', 100), // ~100 for indicators
-            getLatestKlines('BTC_USDT', '1m', 2),   // Last 2 for sync check
-            getLatestKlines(contract, '15m', 20)   // ~20 for EMA15 calculation
+        // --- Fetch Data Concurrently ---
+        const [
+            positionResult, // Fetch position attempt
+            ethKlines1m,
+            btcKlines1m,
+            ethKlines15m,
+            fngData,        // Fetch FNG Index
+            btcKlines1d     // Fetch BTC Daily Klines
+        ] = await Promise.all([
+            futuresApi.getPosition(settle, contract).catch(err => err), // Catch error directly
+            getLatestKlines(contract, '1m', 100),
+            getLatestKlines('BTC_USDT', '1m', 2),
+            getLatestKlines(contract, '15m', 20),
+            getFngIndex(),
+            getLatestKlines('BTC_USDT', '1d', 60) // Fetch ~60 days for EMA50
         ]);
 
-        // 3. Calculate 1m Indicators for ETH
-        const enrichedEth1m: CandleData[] = calculateIndicators(ethKlines1m);
+        // --- Process Position Info ---
+        let positionInfo = null;
+        if (!(positionResult instanceof Error) && positionResult.body && positionResult.body.size !== 0) {
+            const pos = positionResult.body;
+            console.log("Raw Position Data from Gate.io:", JSON.stringify(pos, null, 2));
+            positionInfo = {
+                side: pos.size! > 0 ? 'long' : 'short',
+                entryPrice: parseFloat(pos.entryPrice || '0'),
+                liquidationPrice: parseFloat(pos.liqPrice || '0') || null
+            };
+            console.log("Parsed Position Info:", JSON.stringify(positionInfo, null, 2));
+        // Safely check for status property before accessing it
+        } else if (positionResult instanceof Error && 'status' in positionResult && positionResult.status !== 404) {
+            console.error("Gate.io Get Position Error (Non-404):", positionResult.message);
+        } else if (positionResult instanceof Error) {
+             // Handle other errors or log that no position was found (which might also throw specific errors)
+             console.log("No active position found or API error fetching position:", positionResult.message);
+        }
 
-        // 4. Calculate 15m EMA for ETH
+        // --- Calculate Indicators ---
+        const enrichedEth1m: CandleData[] = calculateIndicators(ethKlines1m);
         const closes15m = ethKlines15m.map(d => d.close);
-        const ema15Values = calculateEma(closes15m, 15); // Calculate EMA15
-         // Add EMA15 to the 15m data (needed for holdability score)
+        const ema15Values = calculateEma(closes15m, 15);
         const enrichedEth15m = ethKlines15m.map((candle, index) => ({
-            ...candle,
-            EMA15: ema15Values[index] ?? null
+            ...candle, EMA15: ema15Values[index] ?? null
         }));
 
+        // --- Calculate BTC Daily Trend ---
+        let btcDailyTrend: 'up' | 'down' | 'flat' | null = null;
+        let btcEma50: number | null = null;
+        if (btcKlines1d && btcKlines1d.length >= 50) {
+            const closes1d = btcKlines1d.map(d => d.close);
+            const ema50Values1d = calculateEma(closes1d, 50);
+            const latestBtcClose1d = btcKlines1d[btcKlines1d.length - 1]?.close;
+            btcEma50 = ema50Values1d[ema50Values1d.length - 1] ?? null;
+            if (latestBtcClose1d && btcEma50) {
+                btcDailyTrend = latestBtcClose1d > btcEma50 ? 'up' : 'down';
+            } else {
+                 btcDailyTrend = 'flat'; // Or null if calculation failed
+            }
+        }
 
-        // 5. Ensure we have enough data for scoring
+        // --- Ensure Data Sufficiency ---
         if (enrichedEth1m.length < 2 || btcKlines1m.length < 2 || enrichedEth15m.length < 2) {
             throw new Error('Insufficient kline data available for processing');
         }
 
-        // 6. Calculate Holdability Score (if position exists)
+        // --- Calculate Scores ---
         const holdabilityResult = calculateHoldabilityScore(
-            enrichedEth1m,
-            positionInfo,
-            btcKlines1m,
-            enrichedEth15m // Pass 15m data with EMA15
+            enrichedEth1m, positionInfo, btcKlines1m, enrichedEth15m
         );
 
-        // 7. Calculate Opening Signal Score (**PLACEHOLDER - Needs Update**)
-        // TODO: Update scoreOpeningSignals in lib/score.ts to use new indicators
-        // For now, we might pass the enriched data, but the logic inside is old.
-        // We also need to add the 15m EMA trend info if scoreOpeningSignals uses it.
         const latestEth1m = enrichedEth1m[enrichedEth1m.length - 1];
         const latest15mWithEma = enrichedEth15m[enrichedEth15m.length - 1];
-        // Add 15m EMA trend to latest 1m data for potential use in opening score
         ;(latestEth1m as any).EMA15_Trend = latest15mWithEma.EMA15 ? (latestEth1m.close > latest15mWithEma.EMA15 ? 'up' : 'down') : 'flat';
 
-        // ** TEMPORARY: Using old scoring logic with potentially incompatible data **
-        // This needs to be rewritten in lib/score.ts based on new indicators!
         const longSignal = scoreOpeningSignals(enrichedEth1m, 'long');
         const shortSignal = scoreOpeningSignals(enrichedEth1m, 'short');
 
-
-        // 8. Prepare Response
+        // --- Prepare Response ---
         res.status(200).json({
-            // Core Info
             time: latestEth1m.timestamp,
             price: latestEth1m.close,
 
-            // Opening Signal (Needs Rework based on new indicators)
+            // Market Context
+            market_context: {
+                fng_value: fngData.value,
+                fng_classification: fngData.classification,
+                btc_daily_trend: btcDailyTrend,
+                btc_daily_ema50: btcEma50
+            },
+
             opening_signal: {
                  long_score: longSignal.score,
                  long_reasons: longSignal.reasons,
                  long_signalTypes: longSignal.types,
-                 long_details: longSignal.details, // Add details
+                 long_details: longSignal.details,
                  short_score: shortSignal.score,
                  short_reasons: shortSignal.reasons,
                  short_signalTypes: shortSignal.types,
-                 short_details: shortSignal.details, // Add details
-                 // Add 15m Trend Info
+                 short_details: shortSignal.details,
                  ema15m_trend: (latestEth1m as any).EMA15_Trend
             },
-
-            // Holdability Score (if position exists)
             holdability_score: positionInfo ? holdabilityResult.score : null,
             holdability_details: positionInfo ? holdabilityResult.details : [],
-
-             // Current Position Info (if exists)
             position: positionInfo,
-
-            // Key 1m Indicators for Display
             indicators_1m: {
                 ema5: latestEth1m.EMA5 ?? null,
                 ema10: latestEth1m.EMA10 ?? null,
@@ -157,19 +175,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 volume: latestEth1m.volume,
                 vma20: latestEth1m.VMA20 ?? null,
             },
-             // Key 15m Indicator
             indicators_15m: {
                 ema15: latest15mWithEma.EMA15 ?? null,
             }
-
-            // Note: Fixed TP/SL removed as per strategy relying on external bot/manual exit
         });
 
     } catch (err: any) {
         console.error("API Error:", err);
-        // Provide more specific error feedback if possible
         let errorMsg = 'Failed to fetch or compute signal';
-        if (err.response?.body?.label) { // Check for Gate.io specific error label
+        if (err.response?.body?.label) {
             errorMsg = `Gate.io API Error: ${err.response.body.label} - ${err.response.body.message}`;
         } else if (err.message) {
             errorMsg = err.message;

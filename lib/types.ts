@@ -49,6 +49,14 @@ export interface CandleData {
     time?: number | null;
     price?: number | null;
 
+    // Market Context
+    market_context?: {
+        fng_value: number | null;
+        fng_classification: string | null;
+        btc_daily_trend: 'up' | 'down' | 'flat' | null;
+        btc_daily_ema50: number | null;
+    } | null;
+
     // Opening Signal Info (Nested Object)
     opening_signal?: {
         long_score: number;
