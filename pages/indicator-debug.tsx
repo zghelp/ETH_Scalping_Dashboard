@@ -5,7 +5,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export default function IndicatorDebugPage() {
   const { data, isLoading, error } = useSWR('/api/signal', fetcher, {
-    refreshInterval: 30000,
+    refreshInterval: 60000,
   })
 
   if (isLoading || !data) return <div className="p-6">📊 加载中...</div>

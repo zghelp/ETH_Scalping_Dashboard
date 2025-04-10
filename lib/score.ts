@@ -1,68 +1,126 @@
-import { CandleData } from './types'
+import { CandleData } from './types'; // Ensure CandleData includes all new indicators + EMA15_Trend
 
-export function scoreSignals(data: CandleData[], direction: 'long' | 'short') {
-  const latest = data[data.length - 1]
-  const prev = data[data.length - 2]
-  const reasons: string[] = []
-  const types: string[] = []
-  let score = 0
+// Renamed function to reflect its purpose for opening signals
+export function scoreSignals(data: CandleData[], direction: 'long' | 'short'): { score: number; reasons: string[]; types: string[] } {
+    if (data.length < 2) {
+        return { score: 0, reasons: ['Insufficient data'], types: [] };
+    }
 
-  const emaCondition = direction === 'long'
-    ? latest.EMA5 > latest.EMA20
-    : latest.EMA5 < latest.EMA20
+    const latest = data[data.length - 1];
+    const prev = data[data.length - 2];
+    const reasons: string[] = [];
+    const types: string[] = []; // Can categorize signals (e.g., 'Trend', 'Momentum', 'Breakout')
+    let score = 0;
 
-  if (emaCondition) {
-    reasons.push('EMA5 与 EMA20 方向共振')
-    types.push('A')
-    score += 2
-  }
+    // --- Indicator Values (handle nulls) ---
+    const ema5 = latest.EMA5 ?? null;
+    const ema10 = latest.EMA10 ?? null;
+    const bbUpper = latest.BB_Upper ?? null;
+    const bbLower = latest.BB_Lower ?? null;
+    const bbMiddle = latest.BB_Middle ?? null;
+    const stochK = latest.Stoch_K ?? null;
+    const stochD = latest.Stoch_D ?? null;
+    const vma20 = latest.VMA20 ?? null;
+    const volume = latest.volume;
+    const vwap = latest.VWAP ?? null;
+    const atr = latest.ATR14 ?? 0; // Use 0 if ATR is null
+    const ema15Trend = (latest as any).EMA15_Trend ?? 'flat'; // Trend added in API route
+    const btcClose = latest.BTC_close ?? null;
+    const prevBtcClose = prev.BTC_close ?? null;
 
-  const rsiCondition = direction === 'long'
-    ? latest.RSI > 50
-    : latest.RSI < 50
+    // --- Scoring Logic for Opening Signals ---
 
-  if (rsiCondition) {
-    reasons.push('RSI 趋势支撑当前方向')
-    types.push('A')
-    score += 2
-  }
+    // 1. Fast EMA Trend (+2)
+    if (ema5 !== null && ema10 !== null) {
+        if (direction === 'long' && ema5 > ema10) {
+            reasons.push('EMA5 > EMA10 (短期看涨)');
+            types.push('Trend');
+            score += 2;
+        } else if (direction === 'short' && ema5 < ema10) {
+            reasons.push('EMA5 < EMA10 (短期看跌)');
+            types.push('Trend');
+            score += 2;
+        }
+    }
 
-  const volumeSpike = latest.volume > prev.volume * 1.2
-  if (volumeSpike) {
-    reasons.push('出现有效放量')
-    types.push('B')
-    score += 1
-  }
+    // 2. Bollinger Band Breakout/Touch (+2)
+    if (bbUpper !== null && bbLower !== null && bbMiddle !== null) {
+         if (direction === 'long' && latest.close > bbUpper) {
+            reasons.push('价格突破布林带上轨');
+            types.push('Breakout');
+            score += 2;
+        } else if (direction === 'short' && latest.close < bbLower) {
+            reasons.push('价格跌破布林带下轨');
+            types.push('Breakout');
+            score += 2;
+        }
+        // Optional: Add points for touching bands in strong trends?
+        // else if (direction === 'long' && latest.close >= bbMiddle && latest.low <= bbLower + 0.2 * atr) { ... } // Bounce off lower band in uptrend?
+    }
 
-  const longK = (latest.close - latest.open) > Math.abs(latest.open - latest.low) &&
-                (latest.close > latest.open) === (direction === 'long')
+    // 3. Stochastic Momentum (+2)
+    if (stochK !== null && stochD !== null) {
+        const kCrossedDUp = prev.Stoch_K !== null && prev.Stoch_K <= prev.Stoch_D! && stochK > stochD;
+        const kCrossedDDown = prev.Stoch_K !== null && prev.Stoch_K >= prev.Stoch_D! && stochK < stochD;
 
-  if (longK) {
-    reasons.push('出现实体趋势K线')
-    types.push('B')
-    score += 1
-  }
+        if (direction === 'long' && kCrossedDUp && stochK < 70) { // Cross up, not too overbought
+            reasons.push('Stoch %K 上穿 %D (动能增强)');
+            types.push('Momentum');
+            score += 2;
+        } else if (direction === 'short' && kCrossedDDown && stochK > 30) { // Cross down, not too oversold
+            reasons.push('Stoch %K 下穿 %D (动能减弱)');
+            types.push('Momentum');
+            score += 2;
+        }
+    }
 
-  // ✅ 使用真实 BTC 与 ETH 同步方向判断
-  if (
-    latest.ETH_close > prev.ETH_close &&
-    latest.BTC_close > prev.BTC_close &&
-    direction === 'long'
-  ) {
-    reasons.push('BTC 同步上涨，确认多头共振')
-    types.push('A')
-    score += 1
-  }
+    // 4. Volume Confirmation (+1)
+    if (vma20 !== null && volume > vma20 * 1.5) {
+        reasons.push('成交量放大 ( > VMA20 * 1.5)');
+        types.push('Confirmation');
+        score += 1;
+    }
 
-  if (
-    latest.ETH_close < prev.ETH_close &&
-    latest.BTC_close < prev.BTC_close &&
-    direction === 'short'
-  ) {
-    reasons.push('BTC 同步下跌，确认空头共振')
-    types.push('A')
-    score += 1
-  }
+    // 5. VWAP Confirmation (+1) - Price relative to VWAP
+     if (vwap !== null) {
+        if (direction === 'long' && latest.close > vwap) {
+            reasons.push('价格 > VWAP (日内偏多)');
+            types.push('Confirmation');
+            score += 1;
+        } else if (direction === 'short' && latest.close < vwap) {
+            reasons.push('价格 < VWAP (日内偏空)');
+            types.push('Confirmation');
+            score += 1;
+        }
+    }
 
-  return { score, reasons, types }
+    // 6. 15m EMA Trend Alignment (+1) - As discussed (Option 2)
+    if (direction === 'long' && ema15Trend === 'up') {
+        reasons.push('与 15m EMA 趋势同向 (涨)');
+        types.push('TrendFilter');
+        score += 1;
+    } else if (direction === 'short' && ema15Trend === 'down') {
+        reasons.push('与 15m EMA 趋势同向 (跌)');
+        types.push('TrendFilter');
+        score += 1;
+    }
+
+    // 7. BTC Sync Confirmation (+1)
+    if (btcClose !== null && prevBtcClose !== null) {
+        const ethDirectionUp = latest.close > prev.close;
+        const btcDirectionUp = btcClose > prevBtcClose;
+        if (direction === 'long' && ethDirectionUp && btcDirectionUp) {
+            reasons.push('BTC 同步上涨');
+            types.push('Confirmation');
+            score += 1;
+        } else if (direction === 'short' && !ethDirectionUp && !btcDirectionUp) {
+            reasons.push('BTC 同步下跌');
+            types.push('Confirmation');
+            score += 1;
+        }
+    }
+
+    // Max score could be 2+2+2+1+1+1+1 = 10
+
+    return { score, reasons, types };
 }

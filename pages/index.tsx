@@ -1,48 +1,78 @@
 import Head from 'next/head'
 import useSWR from 'swr'
 import SignalCard from '@/components/SignalCard'
-import SignalDecision from '@/components/SignalDecision'
+import SignalDecision from '@/components/SignalDecision';
+import type { SignalProps } from '@/lib/types'; // Import the updated type
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
+const fetcher = (url: string): Promise<SignalProps> => fetch(url).then(res => {
+    if (!res.ok) {
+        // Try to parse error details from Gate.io if possible
+        return res.json().then(errData => {
+            throw new Error(errData.error || `HTTP error! status: ${res.status}`);
+        }).catch(() => {
+             throw new Error(`HTTP error! status: ${res.status}`);
+        });
+    }
+    return res.json();
+});
 
 export default function Home() {
-  const { data, isLoading, error } = useSWR('/api/signal', fetcher, {
-    refreshInterval: 30000
-  })
+  // Use the SignalProps type with useSWR for better type safety
+  const { data, isLoading, error } = useSWR<SignalProps>('/api/signal', fetcher, {
+    refreshInterval: 30000 // Refresh every 30 seconds
+  });
 
-  if (!data) return <div className="p-4">加载中...</div>
+  // Handle loading and initial error states more gracefully
+  if (error) return <div className="p-4 text-center text-red-500">加载信号时出错: {error.message}</div>;
+  if (!data && isLoading) return <div className="p-4 text-center text-gray-500">加载中...</div>;
+  // Handle case where data might be fetched but is empty/invalid (though API should handle this)
+  if (!data) return <div className="p-4 text-center text-gray-500">无法获取信号数据。</div>;
+
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
       <Head>
         <title>ETH Scalping 策略助手</title>
       </Head>
-      <main className="max-w-xl mx-auto">
+      {/* Adjust max-width to accommodate wider card */}
+      <main className="max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold mb-4 text-center">🚀 ETH Scalping 策略助手</h1>
-        <SignalDecision
-          long={{
-            score: data.long_score,
-            signalTypes: data.long_signalTypes,
-            reasons: data.long_reasons
-          }}
-          short={{
-            score: data.short_score,
-            signalTypes: data.short_signalTypes,
-            reasons: data.short_reasons
-          }}
-        />
+
+        {/* Pass data to SignalDecision based on new structure */}
+        {data.opening_signal && (
+            <SignalDecision
+              long={{
+                score: data.opening_signal.long_score,
+                signalTypes: data.opening_signal.long_signalTypes ?? [], // Pass signalTypes
+                reasons: data.opening_signal.long_reasons ?? []
+              }}
+              short={{
+                score: data.opening_signal.short_score,
+                signalTypes: data.opening_signal.short_signalTypes ?? [], // Pass signalTypes
+                reasons: data.opening_signal.short_reasons ?? []
+              }}
+            />
+        )}
+
+        {/* Pass the entire data object or specific parts according to SignalProps */}
         <SignalCard
           time={data.time}
           price={data.price}
-          long_score={data.long_score}
-          short_score={data.short_score}
-          take_profit={data.take_profit}
-          stop_loss={data.stop_loss}
+          opening_signal={data.opening_signal}
+          holdability_score={data.holdability_score}
+          holdability_details={data.holdability_details}
+          position={data.position}
+          indicators_1m={data.indicators_1m}
+          indicators_15m={data.indicators_15m}
+          // Pass loading and error states from useSWR
           isLoading={isLoading}
           error={error}
+          // Pass recommendation if it's part of the data structure
+          // recommendation={data.recommendation}
+          // recommendationReasons={data.recommendationReasons}
         />
 
-        <p className="text-center text-xs text-gray-500 mt-6">自动刷新每30秒 | Powered by Gate.io API</p>
+        <p className="text-center text-xs text-gray-500 mt-6">自动刷新每 30 秒 | Powered by Gate.io API</p>
       </main>
     </div>
   )
