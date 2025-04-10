@@ -19,25 +19,17 @@ const fetcher = (url: string): Promise<SignalProps> => fetch(url).then(res => {
 });
 
 export default function Home() {
+  // --- Hooks must be called at the top level ---
+  const [prevScores, setPrevScores] = useState({ long: 0, short: 0 });
+  const audioRef = useRef<HTMLAudioElement>(null); // Ref for audio element
+  const notificationThreshold = 8; // Trigger notification if score >= 8
+
   // Use the SignalProps type with useSWR for better type safety
   const { data, isLoading, error } = useSWR<SignalProps>('/api/signal', fetcher, {
     refreshInterval: 60000 // Refresh every 60 seconds
   });
 
-  // Handle loading and initial error states more gracefully
-  if (error) return <div className="p-4 text-center text-red-500">加载信号时出错: {error.message}</div>;
-  if (!data && isLoading) return <div className="p-4 text-center text-gray-500">加载中...</div>;
-  // Handle case where data might be fetched but is empty/invalid (though API should handle this)
-  if (!data) return <div className="p-4 text-center text-gray-500">无法获取信号数据。</div>;
-
-  // Log the data received from useSWR to check market_context
-  // console.log("Home component received data:", data); // Keep console log commented for now
-
-  // --- Notification Logic ---
-  const [prevScores, setPrevScores] = useState({ long: 0, short: 0 });
-  const audioRef = useRef<HTMLAudioElement>(null); // Ref for audio element
-  const notificationThreshold = 8; // Trigger notification if score >= 8
-
+  // --- Notification Effect Logic ---
   useEffect(() => {
     // Request permission on component mount if needed
     if (typeof window !== 'undefined' && "Notification" in window && Notification.permission === "default") {
@@ -89,7 +81,17 @@ export default function Home() {
     }
   }, [data, prevScores.long, prevScores.short]); // Depend on data and previous scores
 
+  // --- Conditional returns for loading/error states ---
+  if (error) return <div className="p-4 text-center text-red-500">加载信号时出错: {error.message}</div>;
+  // Show loading state but hooks are already called
+  if (!data && isLoading) return <div className="p-4 text-center text-gray-500">加载中...</div>;
+  // Handle case where data might be fetched but is empty/invalid
+  if (!data) return <div className="p-4 text-center text-gray-500">无法获取信号数据。</div>;
 
+  // Log the data received from useSWR to check market_context
+  // console.log("Home component received data:", data);
+
+  // --- Render Page ---
   return (
     // Remove 'dark' class and background classes, handled by body style now
     <div className="min-h-screen py-8 px-4">
