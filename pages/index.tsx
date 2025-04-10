@@ -30,15 +30,15 @@ export default function Home() {
 
 
   return (
-    // Remove background classes here, handled by body style now
-    <div className="dark min-h-screen py-8 px-4">
+    // Remove 'dark' class and background classes, handled by body style now
+    <div className="min-h-screen py-8 px-4">
       <Head>
         <title>ETH Scalping 策略助手</title>
       </Head>
       {/* Adjust max-width to accommodate wider card */}
       <main className="max-w-3xl mx-auto">
-        {/* Add dark mode text color */}
-        <h1 className="text-2xl font-bold mb-4 text-center text-gray-900 dark:text-gray-100">🚀 ETH Scalping 策略助手</h1>
+        {/* Set default text color for dark theme */}
+        <h1 className="text-2xl font-bold mb-4 text-center text-gray-100">🚀 ETH Scalping 策略助手</h1>
 
         {/* Pass data to SignalDecision based on its updated Props */}
         <SignalDecision
@@ -67,7 +67,7 @@ export default function Home() {
           // recommendationReasons={data.recommendationReasons}
         />
 
-        <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">自动刷新每 60 秒 | Powered by Gate.io API</p>
+        <p className="text-center text-xs text-gray-400 mt-6">自动刷新每 60 秒 | Powered by Gate.io API</p> {/* Adjusted footer color */}
       </main>
     </div>
   )
