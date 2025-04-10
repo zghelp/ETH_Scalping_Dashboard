@@ -9,8 +9,8 @@ interface IndicatorChartProps {
 }
 
 // Helper to format data for lightweight-charts
-const formatChartData = (candle: CandleData): CandlestickData & { time: number } => ({
-  time: candle.timestamp / 1000, // Library expects seconds
+const formatChartData = (candle: CandleData): CandlestickData => ({
+  time: (candle.timestamp / 1000) as UTCTimestamp, // Cast to expected type
   open: candle.open,
   high: candle.high,
   low: candle.low,
@@ -19,7 +19,7 @@ const formatChartData = (candle: CandleData): CandlestickData & { time: number }
 
 const formatLineData = (time: number, value: number | null | undefined): LineData | null => {
     if (value === null || value === undefined) return null;
-    return { time: time / 1000, value }; // Library expects seconds
+    return { time: (time / 1000) as UTCTimestamp, value }; // Cast to expected type
 };
 
 const IndicatorChart: React.FC<IndicatorChartProps> = ({ data }) => {
