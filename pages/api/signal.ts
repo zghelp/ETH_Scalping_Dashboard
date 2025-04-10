@@ -41,17 +41,28 @@ const calculateEma = (arr: number[], period: number): (number | null)[] => {
 
 // Helper function to fetch FNG Index
 async function getFngIndex() {
+    const url = 'https://api.alternative.me/fng/?limit=1';
+    console.log(`Fetching FNG Index from: ${url}`); // Log URL
     try {
-        const response = await axios.get('https://api.alternative.me/fng/?limit=1');
+        const response = await axios.get(url);
+        console.log("FNG API Response Status:", response.status); // Log status
+        // console.log("FNG API Response Data:", JSON.stringify(response.data, null, 2)); // Log raw data (optional, can be verbose)
         if (response.data && response.data.data && response.data.data.length > 0) {
             const fngData = response.data.data[0];
-            return {
+            const result = {
                 value: parseInt(fngData.value, 10),
                 classification: fngData.value_classification,
             };
+            console.log("Parsed FNG Data:", result); // Log parsed data
+            return result;
+        } else {
+            console.warn("FNG API response structure unexpected:", response.data);
         }
-    } catch (error) {
-        console.error("Error fetching FNG Index:", error);
+    } catch (error: any) { // Type error for better logging
+        console.error("Error fetching FNG Index:", error.message || error);
+        if (error.response) {
+             console.error("FNG API Error Response:", error.response.status, error.response.data);
+        }
     }
     return { value: null, classification: null }; // Return null on error
 }
@@ -106,16 +117,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // --- Calculate BTC Daily Trend ---
         let btcDailyTrend: 'up' | 'down' | 'flat' | null = null;
         let btcEma50: number | null = null;
+        console.log(`Processing BTC Daily Trend. Found ${btcKlines1d?.length ?? 0} daily candles.`); // Log candle count
         if (btcKlines1d && btcKlines1d.length >= 50) {
             const closes1d = btcKlines1d.map(d => d.close);
             const ema50Values1d = calculateEma(closes1d, 50);
             const latestBtcClose1d = btcKlines1d[btcKlines1d.length - 1]?.close;
             btcEma50 = ema50Values1d[ema50Values1d.length - 1] ?? null;
+            console.log(`BTC Daily - Latest Close: ${latestBtcClose1d}, EMA50: ${btcEma50}`); // Log values used for trend calc
             if (latestBtcClose1d && btcEma50) {
                 btcDailyTrend = latestBtcClose1d > btcEma50 ? 'up' : 'down';
             } else {
                  btcDailyTrend = 'flat'; // Or null if calculation failed
+                 console.log("BTC Daily Trend set to flat due to missing close or EMA50.");
             }
+        } else {
+             console.log("Not enough BTC daily candles to calculate EMA50 trend.");
         }
 
         // --- Ensure Data Sufficiency ---

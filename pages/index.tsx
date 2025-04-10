@@ -37,7 +37,8 @@ export default function Home() {
       </Head>
       {/* Adjust max-width to accommodate wider card */}
       <main className="max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4 text-center">🚀 ETH Scalping 策略助手</h1>
+        {/* Add dark mode text color */}
+        <h1 className="text-2xl font-bold mb-4 text-center text-gray-900 dark:text-gray-100">🚀 ETH Scalping 策略助手</h1>
 
         {/* Pass data to SignalDecision based on its updated Props */}
         <SignalDecision
