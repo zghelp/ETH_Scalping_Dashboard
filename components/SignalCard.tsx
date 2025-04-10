@@ -45,8 +45,12 @@ export default function SignalCard(props: SignalProps) {
   // Log the received market_context prop for debugging in the browser console
   console.log("SignalCard received market_context:", market_context);
 
-  // Duplicated destructuring block removed. Props are already destructured above.
-  // Duplicated timeStr removed.
+  // Extract market context values with defaults for cleaner JSX access
+  const fngValue = market_context?.fng_value ?? 'N/A';
+  const fngClassification = market_context?.fng_classification ?? 'N/A';
+  const btcDailyTrend = market_context?.btc_daily_trend ?? 'N/A';
+  const btcDailyEma50 = market_context?.btc_daily_ema50 ?? null;
+
 
   return (
     // Set default styles for forced dark theme
@@ -63,17 +67,17 @@ export default function SignalCard(props: SignalProps) {
               15m趋势: {opening_signal?.ema15m_trend ?? '--'} (EMA15: ${indicators_15m?.ema15?.toFixed(2) ?? '--'})
             </div>
          </div>
-         {/* Market Context Row */}
+         {/* Market Context Row - Use extracted variables */}
          <div className="flex flex-col md:flex-row justify-between items-center gap-x-4 gap-y-1 text-xs text-gray-400">
              <div>
-                 恐慌贪婪指数: <span className="font-medium text-gray-200">{market_context?.fng_value ?? 'N/A'} ({market_context?.fng_classification ?? 'N/A'})</span>
+                 恐慌贪婪指数: <span className="font-medium text-gray-200">{fngValue} ({fngClassification})</span>
              </div>
              <div>
-                 BTC日线趋势: <span className={`font-medium ${market_context?.btc_daily_trend === 'up' ? 'text-green-400' : market_context?.btc_daily_trend === 'down' ? 'text-red-400' : 'text-gray-200'}`}>
-                     {market_context?.btc_daily_trend ?? 'N/A'}
+                 BTC日线趋势: <span className={`font-medium ${btcDailyTrend === 'up' ? 'text-green-400' : btcDailyTrend === 'down' ? 'text-red-400' : 'text-gray-200'}`}>
+                     {btcDailyTrend}
                  </span>
-                 {market_context?.btc_daily_ema50 && (
-                     <span className="text-gray-500"> (EMA50: {market_context.btc_daily_ema50.toFixed(2)})</span>
+                 {btcDailyEma50 !== null && (
+                     <span className="text-gray-500"> (EMA50: {btcDailyEma50.toFixed(2)})</span>
                  )}
              </div>
          </div>
