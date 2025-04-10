@@ -100,8 +100,8 @@ export interface CandleData {
     isLoading?: boolean;
     error?: any;
 
-    // Historical Data for Chart
-    historical_data_1m?: CandleData[] | null;
+    // Historical Data for Chart (Removed)
+    // historical_data_1m?: CandleData[] | null;
 
     // Recommendation (Keep if still used)
     recommendation?: string;

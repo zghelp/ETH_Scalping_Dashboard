@@ -1,8 +1,8 @@
-import Head from 'next/head';
+import Head from 'next/head'; // Keep only one import
 import useSWR from 'swr';
 import SignalCard from '@/components/SignalCard';
 import SignalDecision from '@/components/SignalDecision';
-import IndicatorChart from '@/components/IndicatorChart'; // Import the new chart component
+// IndicatorChart import removed
 import type { SignalProps } from '@/lib/types';
 
 const fetcher = (url: string): Promise<SignalProps> => fetch(url).then(res => {
@@ -68,13 +68,14 @@ export default function Home() {
           error={error}
           // Pass recommendation if it's part of the data structure
           // recommendation={data.recommendation}
+          // recommendation={data.recommendation}
           // recommendationReasons={data.recommendationReasons}
         />
 
-        {/* Add the Indicator Chart */}
-        <div className="mt-6">
+        {/* Remove the Indicator Chart */}
+        {/* <div className="mt-6">
           <IndicatorChart data={data.historical_data_1m} />
-        </div>
+        </div> */}
 
         <p className="text-center text-xs text-gray-400 mt-6">自动刷新每 60 秒 | Powered by Gate.io API</p>
       </main>
