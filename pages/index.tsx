@@ -39,22 +39,14 @@ export default function Home() {
       <main className="max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold mb-4 text-center">🚀 ETH Scalping 策略助手</h1>
 
-        {/* Pass data to SignalDecision based on new structure */}
-        {data.opening_signal && (
-            <SignalDecision
-              long={{
-                score: data.opening_signal.long_score,
-                signalTypes: data.opening_signal.long_signalTypes ?? [], // Pass signalTypes
-                reasons: data.opening_signal.long_reasons ?? []
-              }}
-              short={{
-                score: data.opening_signal.short_score,
-                signalTypes: data.opening_signal.short_signalTypes ?? [], // Pass signalTypes
-                reasons: data.opening_signal.short_reasons ?? []
-              }}
-              position={data.position} // Pass the actual position data
-            />
-        )}
+        {/* Pass data to SignalDecision based on its updated Props */}
+        <SignalDecision
+            opening_signal={data.opening_signal ?? null}
+            holdability_score={data.holdability_score ?? null}
+            holdability_details={data.holdability_details ?? null}
+            position={data.position ?? null}
+            market_context={data.market_context ?? null}
+        />
 
         {/* Pass the entire data object or specific parts according to SignalProps */}
         <SignalCard
