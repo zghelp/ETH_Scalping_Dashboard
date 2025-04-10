@@ -47,12 +47,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         try {
             const positionResult = await futuresApi.getPosition(settle, contract);
             const pos = positionResult.body;
+            // Log the raw response from Gate.io API to debug
+            console.log("Raw Position Data from Gate.io:", JSON.stringify(pos, null, 2));
             if (pos && pos.size !== 0) { // Check if there is an open position
                  positionInfo = {
                     side: pos.size! > 0 ? 'long' : 'short',
                     entryPrice: parseFloat(pos.entryPrice || '0'),
                     liquidationPrice: parseFloat(pos.liqPrice || '0') || null // Handle potential null/empty string
                  };
+                 // Log the parsed info as well
+                 console.log("Parsed Position Info:", JSON.stringify(positionInfo, null, 2));
             }
         } catch (posError: any) {
             // Handle cases where position doesn't exist (404) or other API errors
