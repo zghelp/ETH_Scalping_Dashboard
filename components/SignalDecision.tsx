@@ -1,7 +1,9 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'; // Keep useEffect/useState for decision state
+import type { PositionInfoFromAPI } from '@/lib/types'; // Import Position type
 
-type PositionStatus = '空仓' | '持多' | '持空'
+// Use actual position side or '空仓'
+type ActualPositionStatus = '空仓' | 'long' | 'short';
 
 type SignalSummary = {
   score: number
@@ -15,79 +17,81 @@ type Recommendation = {
   level?: string
 }
 
+// Update Props to accept actual position data
 type Props = {
-  long: SignalSummary
-  short: SignalSummary
-}
+  long: SignalSummary;
+  short: SignalSummary;
+  position: PositionInfoFromAPI | null; // Accept actual position from API
+};
 
-export default function SignalDecision({ long, short }: Props) {
-  const [position, setPosition] = useState<PositionStatus>('空仓')
-  const [decision, setDecision] = useState<Recommendation>({ action: '加载中...', reasons: [] })
+export default function SignalDecision({ long, short, position }: Props) {
+  // Decision state remains, but position state is removed
+  const [decision, setDecision] = useState<Recommendation>({ action: '加载中...', reasons: [] });
+
+  // Determine actual position status from props
+  const actualPositionStatus: ActualPositionStatus = position ? position.side : '空仓';
 
   useEffect(() => {
-    setDecision(generateRecommendation(position, long, short))
-  }, [position, long, short])
+    // Generate recommendation based on actual position status
+    setDecision(generateRecommendation(actualPositionStatus, long, short));
+  }, [actualPositionStatus, long, short]); // Depend on actual status
+
+  // Map actual status for display
+  const displayStatus = actualPositionStatus === 'long' ? '持多' : actualPositionStatus === 'short' ? '持空' : '空仓';
 
   return (
-    <div>
-      <div className="p-4 rounded border my-6 bg-white">
-        <h2 className="text-lg font-semibold mb-2">📌 当前持仓状态</h2>
-        <div className="flex space-x-2 mb-4">
-          {(['空仓', '持多', '持空'] as PositionStatus[]).map((status) => (
-            <button
-              key={status}
-              className={`px-4 py-2 rounded ${position === status ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-              onClick={() => setPosition(status)}
-            >
-              {status}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="p-4 border rounded bg-gray-50">
-        <h3 className="text-md font-semibold">✅ 建议操作：{decision.action}</h3>
-        <ul className="list-disc list-inside mt-2 text-sm text-gray-700">
+    <div className="text-gray-900 dark:text-gray-100">
+      {/* Recommendation Box - No more manual selection */}
+      <div className="p-4 border rounded bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 my-6">
+         <div className="flex justify-between items-center mb-2">
+             <h3 className="text-md font-semibold text-gray-800 dark:text-gray-200">✅ 建议操作</h3>
+             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                 (基于实际持仓: <span className={`font-bold ${actualPositionStatus === 'long' ? 'text-green-500' : actualPositionStatus === 'short' ? 'text-red-500' : ''}`}>{displayStatus}</span>)
+             </span>
+         </div>
+        <p className="font-semibold text-blue-600 dark:text-blue-400">{decision.action}</p>
+        <ul className="list-disc list-inside mt-1 text-sm text-gray-700 dark:text-gray-300">
           {decision.reasons.map((r, i) => <li key={i}>{r}</li>)}
         </ul>
       </div>
     </div>
-  )  
+  );
 }
 
-// TODO: Refine recommendation logic based on new scoring system and signal types ('Trend', 'Breakout', etc.)
-// For now, use a simplified score-based logic to avoid build errors due to type mismatch.
-function generateRecommendation(position: PositionStatus, long: SignalSummary, short: SignalSummary): Recommendation {
+// Update function signature to accept ActualPositionStatus
+function generateRecommendation(positionStatus: ActualPositionStatus, long: SignalSummary, short: SignalSummary): Recommendation {
   const openLongThreshold = 6; // Example threshold for opening long
   const openShortThreshold = 6; // Example threshold for opening short
-  const holdThreshold = 4; // Example threshold for holding
+  // holdThreshold is not used in this simplified logic yet
 
-  if (position === '空仓') {
+  if (positionStatus === '空仓') {
     if (long.score >= openLongThreshold && long.score > short.score) {
-        return { action: '建议开多', reasons: long.reasons };
+      return { action: '建议开多', reasons: long.reasons };
     }
     if (short.score >= openShortThreshold && short.score > long.score) {
-        return { action: '建议开空', reasons: short.reasons };
+      return { action: '建议开空', reasons: short.reasons };
     }
     return { action: '建议观望', reasons: ['开仓信号分数不足'] };
   }
 
-  if (position === '持多') {
+  if (positionStatus === 'long') { // Check actual 'long' status
     // Simplified: If short signal is strong, suggest closing. Otherwise hold.
     if (short.score >= openShortThreshold) {
-         return { action: '建议平多仓 (空头信号增强)', reasons: short.reasons };
+      return { action: '建议平多仓 (空头信号增强)', reasons: short.reasons };
     }
-    // Add logic based on holdability score if available/passed here?
-    return { action: '建议持有/待定', reasons: ['暂无强烈平仓信号'] }; // Placeholder
+    // TODO: Integrate holdability score here for better hold/close decision
+    return { action: '建议持有/待定 (多)', reasons: ['暂无强烈平仓信号'] }; // Placeholder
   }
 
-  if (position === '持空') {
-     // Simplified: If long signal is strong, suggest closing. Otherwise hold.
-     if (long.score >= openLongThreshold) {
-         return { action: '建议平空仓 (多头信号增强)', reasons: long.reasons };
-     }
-     // Add logic based on holdability score if available/passed here?
-     return { action: '建议持有/待定', reasons: ['暂无强烈平仓信号'] }; // Placeholder
+  if (positionStatus === 'short') { // Check actual 'short' status
+    // Simplified: If long signal is strong, suggest closing. Otherwise hold.
+    if (long.score >= openLongThreshold) {
+      return { action: '建议平空仓 (多头信号增强)', reasons: long.reasons };
+    }
+    // TODO: Integrate holdability score here for better hold/close decision
+    return { action: '建议持有/待定 (空)', reasons: ['暂无强烈平仓信号'] }; // Placeholder
   }
 
-  return { action: '暂无明确建议', reasons: ['信号不足或状态未知'] };
+  // Should not be reached if positionStatus is one of the three values
+  return { action: '状态错误', reasons: ['无法识别的持仓状态'] };
 }

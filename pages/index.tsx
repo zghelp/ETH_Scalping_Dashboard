@@ -19,7 +19,7 @@ const fetcher = (url: string): Promise<SignalProps> => fetch(url).then(res => {
 export default function Home() {
   // Use the SignalProps type with useSWR for better type safety
   const { data, isLoading, error } = useSWR<SignalProps>('/api/signal', fetcher, {
-    refreshInterval: 30000 // Refresh every 30 seconds
+    refreshInterval: 60000 // Refresh every 60 seconds
   });
 
   // Handle loading and initial error states more gracefully
@@ -30,7 +30,8 @@ export default function Home() {
 
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-4">
+    // Add 'dark' class here and basic dark background
+    <div className="dark min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4">
       <Head>
         <title>ETH Scalping 策略助手</title>
       </Head>
@@ -51,6 +52,7 @@ export default function Home() {
                 signalTypes: data.opening_signal.short_signalTypes ?? [], // Pass signalTypes
                 reasons: data.opening_signal.short_reasons ?? []
               }}
+              position={data.position} // Pass the actual position data
             />
         )}
 
@@ -72,7 +74,7 @@ export default function Home() {
           // recommendationReasons={data.recommendationReasons}
         />
 
-        <p className="text-center text-xs text-gray-500 mt-6">自动刷新每 30 秒 | Powered by Gate.io API</p>
+        <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">自动刷新每 60 秒 | Powered by Gate.io API</p>
       </main>
     </div>
   )
