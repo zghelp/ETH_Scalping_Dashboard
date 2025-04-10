@@ -1,7 +1,7 @@
 import React from 'react'
 import type { SignalProps } from '@/lib/types'
 import { useEffect, useState } from 'react'
-import { useSignal } from '@/lib/signal'
+import { useSignal } from '@/pages/api/signal'
 export default function SignalCard(props: SignalProps) {
   const timeStr = props.time
     ? new Date(props.time).toLocaleString('zh-CN', { hour12: false })
