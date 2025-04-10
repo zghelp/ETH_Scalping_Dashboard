@@ -7,7 +7,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export default function Home() {
   const { data, isLoading, error } = useSWR('/api/signal', fetcher, {
-    refreshInterval: 60000
+    refreshInterval: 30000
   })
 
   if (!data) return <div className="p-4">加载中...</div>
@@ -42,7 +42,7 @@ export default function Home() {
           error={error}
         />
 
-        <p className="text-center text-xs text-gray-500 mt-6">自动刷新每60秒 | Powered by Gate.io API</p>
+        <p className="text-center text-xs text-gray-500 mt-6">自动刷新每30秒 | Powered by Gate.io API</p>
       </main>
     </div>
   )
