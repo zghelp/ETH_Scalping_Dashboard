@@ -28,6 +28,8 @@ export default function Home() {
   // Handle case where data might be fetched but is empty/invalid (though API should handle this)
   if (!data) return <div className="p-4 text-center text-gray-500">无法获取信号数据。</div>;
 
+  // Log the data received from useSWR to check market_context
+  console.log("Home component received data:", data);
 
   return (
     // Remove 'dark' class and background classes, handled by body style now
@@ -59,6 +61,7 @@ export default function Home() {
           position={data.position}
           indicators_1m={data.indicators_1m}
           indicators_15m={data.indicators_15m}
+          market_context={data.market_context} // Pass market_context here
           // Pass loading and error states from useSWR
           isLoading={isLoading}
           error={error}
