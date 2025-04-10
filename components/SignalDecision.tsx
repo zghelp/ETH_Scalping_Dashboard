@@ -41,16 +41,16 @@ export default function SignalDecision({ long, short, position }: Props) {
 
   return (
     <div className="text-gray-900 dark:text-gray-100">
-      {/* Recommendation Box - No more manual selection */}
-      <div className="p-4 border rounded bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 my-6">
+      {/* Recommendation Box - Adjusted Dark Mode Colors */}
+      <div className="p-4 border rounded bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 my-6"> {/* Use solid dark bg */}
          <div className="flex justify-between items-center mb-2">
-             <h3 className="text-md font-semibold text-gray-800 dark:text-gray-200">✅ 建议操作</h3>
-             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                 (基于实际持仓: <span className={`font-bold ${actualPositionStatus === 'long' ? 'text-green-500' : actualPositionStatus === 'short' ? 'text-red-500' : ''}`}>{displayStatus}</span>)
+             <h3 className="text-md font-semibold text-gray-800 dark:text-gray-100">✅ 建议操作</h3> {/* Brighter heading */}
+             <span className="text-sm font-medium text-gray-600 dark:text-gray-300"> {/* Slightly brighter status text */}
+                 (基于实际持仓: <span className={`font-bold ${actualPositionStatus === 'long' ? 'text-green-500 dark:text-green-400' : actualPositionStatus === 'short' ? 'text-red-500 dark:text-red-400' : 'dark:text-gray-300'}`}>{displayStatus}</span>)
              </span>
          </div>
-        <p className="font-semibold text-blue-600 dark:text-blue-400">{decision.action}</p>
-        <ul className="list-disc list-inside mt-1 text-sm text-gray-700 dark:text-gray-300">
+        <p className="font-semibold text-blue-600 dark:text-blue-300">{decision.action}</p> {/* Brighter blue */}
+        <ul className="list-disc list-inside mt-1 text-sm text-gray-600 dark:text-gray-200"> {/* Brighter list text */}
           {decision.reasons.map((r, i) => <li key={i}>{r}</li>)}
         </ul>
       </div>

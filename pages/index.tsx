@@ -30,8 +30,8 @@ export default function Home() {
 
 
   return (
-    // Add 'dark' class here and basic dark background
-    <div className="dark min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4">
+    // Add 'dark' class, remove explicit light bg, apply dark bg
+    <div className="dark min-h-screen dark:bg-gray-900 py-8 px-4">
       <Head>
         <title>ETH Scalping 策略助手</title>
       </Head>
