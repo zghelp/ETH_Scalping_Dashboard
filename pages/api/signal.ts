@@ -193,7 +193,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
             indicators_15m: {
                 ema15: latest15mWithEma.EMA15 ?? null,
-            }
+            },
+
+            // Add historical data for chart
+            historical_data_1m: enrichedEth1m // Pass the array with indicators
         });
 
     } catch (err: any) {
