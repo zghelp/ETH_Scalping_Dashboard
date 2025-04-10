@@ -86,15 +86,37 @@ export default function SignalCard(props: SignalProps) {
 
       {/* Opening Signal Score */}
       <div className="p-3 rounded bg-gray-50">
-        <div className="font-semibold mb-2 text-gray-800">开仓信号评分</div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm mb-2">
-          <div>📈 多头评分: {opening_signal?.long_score ?? '--'}</div>
-          <div>📉 空头评分: {opening_signal?.short_score ?? '--'}</div>
+        <div className="font-semibold mb-2 text-gray-800">开仓信号评分 (Max: 10)</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Long Score Details */}
+          <div>
+            <div className="flex items-center mb-1">
+              <div className="font-semibold mr-2">📈 多头评分:</div>
+              <div className={`text-lg font-bold ${opening_signal?.long_score === null ? 'text-gray-500' : opening_signal?.long_score >= 6 ? 'text-green-600' : opening_signal?.long_score >= 4 ? 'text-yellow-600' : 'text-red-600'}`}>
+                 {opening_signal?.long_score ?? '--'}
+              </div>
+            </div>
+            <ul className="text-xs text-gray-600 space-y-1">
+              {opening_signal?.long_details?.map(renderScoreDetail)}
+            </ul>
+          </div>
+          {/* Short Score Details */}
+          <div>
+             <div className="flex items-center mb-1">
+              <div className="font-semibold mr-2">📉 空头评分:</div>
+              <div className={`text-lg font-bold ${opening_signal?.short_score === null ? 'text-gray-500' : opening_signal?.short_score >= 6 ? 'text-red-600' : opening_signal?.short_score >= 4 ? 'text-yellow-600' : 'text-green-600'}`}>
+                 {opening_signal?.short_score ?? '--'}
+              </div>
+            </div>
+             <ul className="text-xs text-gray-600 space-y-1">
+              {opening_signal?.short_details?.map(renderScoreDetail)}
+            </ul>
+          </div>
         </div>
-         {/* Optional: Display opening signal reasons */}
-         {/* <div className="text-xs text-gray-600">
-           <p>多头理由: {opening_signal?.long_reasons?.join(', ') || '无'}</p>
-           <p>空头理由: {opening_signal?.short_reasons?.join(', ') || '无'}</p>
+         {/* Optional: Display opening signal reasons (High-level summary) */}
+         {/* <div className="text-xs text-gray-500 mt-2">
+           <p>多头理由: {opening_signal?.long_reasons?.join('; ') || '无'}</p>
+           <p>空头理由: {opening_signal?.short_reasons?.join('; ') || '无'}</p>
          </div> */}
       </div>
 

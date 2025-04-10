@@ -122,10 +122,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             opening_signal: {
                  long_score: longSignal.score,
                  long_reasons: longSignal.reasons,
-                 long_signalTypes: longSignal.types, // Add types here
+                 long_signalTypes: longSignal.types,
+                 long_details: longSignal.details, // Add details
                  short_score: shortSignal.score,
                  short_reasons: shortSignal.reasons,
-                 short_signalTypes: shortSignal.types, // Add types here
+                 short_signalTypes: shortSignal.types,
+                 short_details: shortSignal.details, // Add details
                  // Add 15m Trend Info
                  ema15m_trend: (latestEth1m as any).EMA15_Trend
             },

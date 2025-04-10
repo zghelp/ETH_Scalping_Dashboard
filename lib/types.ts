@@ -53,10 +53,12 @@ export interface CandleData {
     opening_signal?: {
         long_score: number;
         long_reasons?: string[];
-        long_signalTypes?: string[]; // Add missing property
+        long_signalTypes?: string[];
+        long_details?: ScoreDetail[]; // Add details field
         short_score: number;
         short_reasons?: string[];
-        short_signalTypes?: string[]; // Add missing property
+        short_signalTypes?: string[];
+        short_details?: ScoreDetail[]; // Add details field
         ema15m_trend?: 'up' | 'down' | 'flat';
     } | null;
 
