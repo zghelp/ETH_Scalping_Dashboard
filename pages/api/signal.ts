@@ -7,7 +7,7 @@ import { scoreSignals as scoreOpeningSignals } from '@/lib/score'; // Rename imp
 import { CandleData } from '@/lib/types';
 
 // Initialize Gate.io API Client
-const client = ApiClient.getInstance();
+const client = new ApiClient(); // Correct initialization using 'new'
 // Configure APIv4 key authorization
 client.setApiKeySecret(process.env.GATE_READ_API_KEY!, process.env.GATE_READ_API_SECRET!); // Use env vars
 const futuresApi = new FuturesApi(client);
