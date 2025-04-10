@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { FuturesApi, ApiClient } from 'gateapi-nodejs'; // Import Gate.io library
+import { FuturesApi, ApiClient } from 'gate-api'; // Corrected import path
 import { getLatestKlines } from '@/lib/gateio'; // Keep using this for K-lines
 import { calculateIndicators } from '@/lib/indicators';
 import { calculateHoldabilityScore } from '@/lib/holdabilityScore';
