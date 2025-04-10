@@ -54,30 +54,40 @@ export default function SignalDecision({ long, short }: Props) {
   )  
 }
 
+// TODO: Refine recommendation logic based on new scoring system and signal types ('Trend', 'Breakout', etc.)
+// For now, use a simplified score-based logic to avoid build errors due to type mismatch.
 function generateRecommendation(position: PositionStatus, long: SignalSummary, short: SignalSummary): Recommendation {
+  const openLongThreshold = 6; // Example threshold for opening long
+  const openShortThreshold = 6; // Example threshold for opening short
+  const holdThreshold = 4; // Example threshold for holding
+
   if (position === '空仓') {
-    if (long.signalTypes.includes('A') && long.score >= 5) return {
-      action: '建议开多',
-      reasons: long.reasons
+    if (long.score >= openLongThreshold && long.score > short.score) {
+        return { action: '建议开多', reasons: long.reasons };
     }
-    if (short.signalTypes.includes('A') && short.score >= 5) return {
-      action: '建议开空',
-      reasons: short.reasons
+    if (short.score >= openShortThreshold && short.score > long.score) {
+        return { action: '建议开空', reasons: short.reasons };
     }
-    return { action: '建议观望', reasons: ['暂无明显方向信号'] }
+    return { action: '建议观望', reasons: ['开仓信号分数不足'] };
   }
 
   if (position === '持多') {
-    if (long.signalTypes.includes('B')) return { action: '建议继续持有', reasons: long.reasons }
-    if (long.signalTypes.includes('D')) return { action: '建议止盈', reasons: long.reasons }
-    if (long.signalTypes.includes('E')) return { action: '建议止损', reasons: long.reasons }
+    // Simplified: If short signal is strong, suggest closing. Otherwise hold.
+    if (short.score >= openShortThreshold) {
+         return { action: '建议平多仓 (空头信号增强)', reasons: short.reasons };
+    }
+    // Add logic based on holdability score if available/passed here?
+    return { action: '建议持有/待定', reasons: ['暂无强烈平仓信号'] }; // Placeholder
   }
 
   if (position === '持空') {
-    if (short.signalTypes.includes('B')) return { action: '建议继续持有空单', reasons: short.reasons }
-    if (short.signalTypes.includes('D')) return { action: '建议空单止盈', reasons: short.reasons }
-    if (short.signalTypes.includes('E')) return { action: '建议空单止损', reasons: short.reasons }
+     // Simplified: If long signal is strong, suggest closing. Otherwise hold.
+     if (long.score >= openLongThreshold) {
+         return { action: '建议平空仓 (多头信号增强)', reasons: long.reasons };
+     }
+     // Add logic based on holdability score if available/passed here?
+     return { action: '建议持有/待定', reasons: ['暂无强烈平仓信号'] }; // Placeholder
   }
 
-  return { action: '暂无明确建议', reasons: ['信号不足或状态未知'] }
+  return { action: '暂无明确建议', reasons: ['信号不足或状态未知'] };
 }
