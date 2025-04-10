@@ -42,6 +42,9 @@ export default function SignalCard(props: SignalProps) {
     return <div className="p-4 text-center text-red-500">错误: {error.message || JSON.stringify(error)}</div>;
   }
 
+  // Log the received market_context prop for debugging in the browser console
+  console.log("SignalCard received market_context:", market_context);
+
   // Duplicated destructuring block removed. Props are already destructured above.
   // Duplicated timeStr removed.
 
