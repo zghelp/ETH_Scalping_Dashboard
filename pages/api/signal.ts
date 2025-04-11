@@ -249,9 +249,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
 
             // responseData already contains the precise signal time in responseData.time
-            kv.set(kvKey, JSON.stringify(responseData), kvOptions) // Pass options object (might be empty)
-              .then(() => console.log(`Saved signal data to KV with key: ${kvKey} (TTL: ${ttlLog}, Original Time: ${signalTimestampMs})`))
-              .catch(kvError => console.error("Error saving data to Vercel KV:", kvError));
+            // Use direct 'ex' option syntax if ttlDays > 0
+            if (ttlDays > 0 && kvOptions.ex) {
+                 kv.set(kvKey, JSON.stringify(responseData), { ex: kvOptions.ex })
+                   .then(() => console.log(`Saved signal data to KV with key: ${kvKey} (TTL: ${ttlLog}, Original Time: ${signalTimestampMs})`))
+                   .catch(kvError => console.error("Error saving data to Vercel KV:", kvError));
+            } else {
+                 // Save without expiration if ttlDays <= 0
+                 kv.set(kvKey, JSON.stringify(responseData))
+                   .then(() => console.log(`Saved signal data to KV with key: ${kvKey} (TTL: ${ttlLog}, Original Time: ${signalTimestampMs})`))
+                   .catch(kvError => console.error("Error saving data to Vercel KV:", kvError));
+            }
         } else {
              console.warn("Skipping KV save due to missing signal timestamp.");
         }
