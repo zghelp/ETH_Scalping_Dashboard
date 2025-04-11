@@ -34,24 +34,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Parse the JSON strings and filter out any null/invalid entries
     let parseErrors = 0;
+    // @vercel/kv automatically parses JSON, so just filter nulls/undefined
     const historyData: SignalProps[] = historyDataRaw
-      .map((item, index) => { // Add index for logging context
-        try {
-          const parsed = typeof item === 'string' ? JSON.parse(item) : null;
-          if (parsed === null && item !== null) { // Log if item was not null but parsing failed implicitly (e.g., not a string)
-              console.warn(`Item at index ${index} (key: ${latestKeys[index]}) was not a string or null:`, item);
+      .filter((item): item is SignalProps => {
+          if (item === null || typeof item !== 'object') {
+              console.warn("Filtered out invalid item from KV:", item);
+              return false;
           }
-          return parsed;
-        } catch (e) {
-          parseErrors++;
-          console.error(`Error parsing history data from KV for key ${latestKeys[index]}:`, e);
-          console.error(`Problematic raw item:`, item); // Log the item that failed parsing
-          return null;
-        }
-      })
-      .filter((item): item is SignalProps => item !== null); // Type guard to filter nulls
+          // Optional: Add more checks if needed to ensure it matches SignalProps structure
+          return true;
+      });
 
-    console.log(`Successfully parsed ${historyData.length} history items. Encountered ${parseErrors} parsing errors.`);
+    console.log(`Retrieved ${historyData.length} valid history items from KV.`);
     res.status(200).json(historyData);
 
   } catch (error: any) {
