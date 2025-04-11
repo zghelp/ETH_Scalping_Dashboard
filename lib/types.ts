@@ -103,9 +103,11 @@ export interface CandleData {
     // Historical Data for Chart (Removed)
     // historical_data_1m?: CandleData[] | null;
 
-    // Recommendation (Keep if still used)
-    recommendation?: string;
-    recommendationReasons?: string[];
+    // Recommendation object (calculated by API)
+    recommendation?: {
+        action: string;
+        reasons: string[];
+    } | null;
 
     // Remove old direct props if now nested or obsolete
     // take_profit?: number; (Removed, handled by external bot/manual)

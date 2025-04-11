@@ -1,7 +1,8 @@
 import Head from 'next/head';
 import useSWR from 'swr';
 import Link from 'next/link';
-import type { SignalProps, ScoreDetail } from '@/lib/types'; // Import types
+// Remove import for generateProfessionalRecommendation as it's no longer called here
+import type { SignalProps, ScoreDetail } from '@/lib/types';
 
 // Fetcher function for the history API
 const fetcher = (url: string): Promise<SignalProps[]> => fetch(url).then(res => {
@@ -66,7 +67,7 @@ export default function HistoryPage() {
                   <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">空头分 (细节)</th>
                   <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">持仓</th>
                   <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">扛单分 (细节)</th>
-                  {/* Add more columns if needed */}
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">建议操作 (理由)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
@@ -93,6 +94,11 @@ export default function HistoryPage() {
                                 <p className="text-xs text-gray-500 truncate" title={renderDetails(signal.holdability_details)}>{renderDetails(signal.holdability_details)}</p>
                             </>
                         ) : '-'}
+                    </td>
+                    {/* Display Recommendation */}
+                    <td className="px-4 py-3 text-sm text-gray-300">
+                         <span className="font-semibold text-blue-300">{signal.recommendation?.action ?? 'N/A'}</span>
+                         <p className="text-xs text-gray-500 truncate" title={signal.recommendation?.reasons?.join(', ')}>{signal.recommendation?.reasons?.join(', ') || '-'}</p>
                     </td>
                   </tr>
                 ))}

@@ -6,7 +6,15 @@ import { getLatestKlines } from '@/lib/gateio';
 import { calculateIndicators } from '@/lib/indicators';
 import { calculateHoldabilityScore } from '@/lib/holdabilityScore';
 import { scoreSignals as scoreOpeningSignals } from '@/lib/score';
-import { CandleData, SignalProps } from '@/lib/types'; // Import SignalProps for response type
+import { CandleData, SignalProps } from '@/lib/types';
+// Import recommendation logic and necessary types
+import {
+    generateProfessionalRecommendation,
+    type ActualPositionStatus,
+    type OpeningSignalSummary,
+    type MarketContextSummary,
+    type Recommendation
+} from '@/lib/recommendation';
 
 // Initialize Gate.io API Client
 const client = new ApiClient();
@@ -149,9 +157,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const longSignal = scoreOpeningSignals(enrichedEth1m, 'long');
         const shortSignal = scoreOpeningSignals(enrichedEth1m, 'short');
 
+        // --- Generate Professional Recommendation ---
+        const actualPositionStatus: ActualPositionStatus = positionInfo ? positionInfo.side : '空仓';
+        const marketContextForRec: MarketContextSummary = { // Construct market context for recommendation function
+             fng_value: fngData.value,
+             fng_classification: fngData.classification,
+             btc_daily_trend: btcDailyTrend,
+             btc_daily_ema50: btcEma50
+        };
+        const openingSignalForRec: OpeningSignalSummary = { // Construct opening signal summary for recommendation function
+            long_score: longSignal.score,
+            long_reasons: longSignal.reasons,
+            long_signalTypes: longSignal.types,
+            long_details: longSignal.details,
+            short_score: shortSignal.score,
+            short_reasons: shortSignal.reasons,
+            short_signalTypes: shortSignal.types,
+            short_details: shortSignal.details,
+            ema15m_trend: (latestEth1m as any).EMA15_Trend
+        };
+        const recommendationResult = generateProfessionalRecommendation(
+            actualPositionStatus,
+            openingSignalForRec,
+            positionInfo ? holdabilityResult.score : null,
+            positionInfo ? holdabilityResult.details : null,
+            marketContextForRec
+        );
+
         // --- Prepare Response Data Object ---
-        // Use SignalProps type for structure consistency, omit functions/complex objects if not needed in KV
-        const responseData: Omit<SignalProps, 'isLoading' | 'error' | 'recommendation' | 'recommendationReasons'> = {
+        // Use SignalProps type for structure consistency
+        const responseData: Omit<SignalProps, 'isLoading' | 'error'> = { // Omit only isLoading/error
             time: latestEth1m.timestamp,
             price: latestEth1m.close,
             market_context: {
@@ -189,8 +224,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
             indicators_15m: {
                 ema15: latest15mWithEma.EMA15 ?? null,
+            },
+            // Add the calculated recommendation
+            recommendation: {
+                action: recommendationResult.action,
+                reasons: recommendationResult.reasons
             }
-            // historical_data_1m is removed
         };
 
         // --- Save data to Vercel KV (Run asynchronously, don't block response) ---
