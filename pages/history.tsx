@@ -29,17 +29,12 @@ const fetcher = (url: string): Promise<any> => fetch(url).then(res => {
     return res.json();
 });
 
-// Helper to format timestamp
-const formatTime = (timestamp: number | null | undefined): string => {
-    if (!timestamp) return 'N/A';
-    // Assuming timestamp is in milliseconds
-    return new Date(timestamp).toLocaleString('zh-CN', { dateStyle: 'short', timeStyle: 'medium', hour12: false });
+// Helper to format timestamp (always expects milliseconds)
+const formatTime = (timestampMs: number | null | undefined): string => {
+    if (!timestampMs) return 'N/A';
+    return new Date(timestampMs).toLocaleString('zh-CN', { dateStyle: 'short', timeStyle: 'medium', hour12: false });
 };
-const formatTimeSeconds = (timestamp: number | null | undefined): string => {
-     if (!timestamp) return 'N/A';
-     // Assuming timestamp is in seconds
-     return new Date(timestamp * 1000).toLocaleString('zh-CN', { dateStyle: 'short', timeStyle: 'medium', hour12: false });
- };
+// Removed formatTimeSeconds as we'll handle conversion in findMatchingTrade if needed
 
 
 // Helper to render score details concisely
@@ -194,7 +189,8 @@ export default function HistoryPage() {
                         </td>
                         <td className="px-3 py-2 text-blue-300 font-semibold">{recommendation.action}</td>
                         {/* Matched Trade Data */}
-                        <td className={`px-3 py-2 whitespace-nowrap border-l border-gray-600 ${matchedTrade ? 'text-gray-300' : 'text-gray-600'}`}>{matchedTrade ? formatTimeSeconds(matchedTrade.createTime) : '-'}</td>
+                        {/* Use formatTime and ensure we pass milliseconds */}
+                        <td className={`px-3 py-2 whitespace-nowrap border-l border-gray-600 ${matchedTrade ? 'text-gray-300' : 'text-gray-600'}`}>{matchedTrade ? formatTime(matchedTrade.createTimeMs ?? (matchedTrade.createTime ? matchedTrade.createTime * 1000 : null)) : '-'}</td>
                         <td className={`px-3 py-2 whitespace-nowrap ${matchedTrade ? 'text-gray-200' : 'text-gray-600'}`}>{matchedTrade ? `$${parseFloat(matchedTrade.price!).toFixed(2)}` : '-'}</td>
                          <td className={`px-3 py-2 whitespace-nowrap ${slip === null ? 'text-gray-600' : slip > 0 ? 'text-red-400' : 'text-green-400'}`}>{slip?.toFixed(2) ?? '-'}</td>
                       </tr>
