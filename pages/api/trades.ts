@@ -20,7 +20,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // from: undefined, // Start timestamp (optional)
         // to: undefined, // End timestamp (optional)
     };
-    const result = await futuresApi.listFuturesTrades(settle, options);
+    // Corrected call signature: listFuturesTrades(settle, contract, options)
+    const result = await futuresApi.listFuturesTrades(settle, contract, options);
     console.log(`Successfully fetched ${result.body.length} trades.`);
 
     // Return the list of trades
