@@ -96,6 +96,10 @@ export default function HistoryPage() {
   const isLoading = isLoadingHistory || isLoadingTrades;
   const error = historyError || tradeError;
 
+  // Log trade data for debugging
+  console.log("HistoryPage tradeData:", tradeData);
+  console.log("HistoryPage tradeError:", tradeError);
+
   return (
     <div className="min-h-screen py-8 px-4">
       <Head>
