@@ -55,22 +55,24 @@ const findMatchingTrade = (
     trades: FuturesTrade[] | undefined,
     timeWindowMinutes: number = 2 // Look for trades within +/- X minutes of the signal
 ): FuturesTrade | null => {
+    // Match based on recommended action side, not necessarily current position side
     if (!signalTimeMs || !trades || signalSide === '空仓') {
         return null;
     }
 
     const timeWindowMs = timeWindowMinutes * 60 * 1000;
-    const signalTimeSec = signalTimeMs / 1000;
+    // signalTimeMs is assumed to be in milliseconds from API
 
     for (const trade of trades) {
-        const tradeTimeSec = trade.createTime; // Assuming createTime is in seconds
+        // Use createTimeMs if available, otherwise convert createTime (seconds) to ms
+        const tradeTimeMs = trade.createTimeMs ?? (trade.createTime ? trade.createTime * 1000 : null);
         const tradeSize = trade.size ?? 0;
 
-        if (!tradeTimeSec) continue;
+        if (!tradeTimeMs) continue;
 
-        // Check time window
-        if (Math.abs(tradeTimeSec - signalTimeSec) * 1000 <= timeWindowMs) {
-            // Check side (positive size for long, negative for short)
+        // Check time window using milliseconds directly
+        if (Math.abs(tradeTimeMs - signalTimeMs) <= timeWindowMs) {
+            // Check side: Match trade direction with the signal direction being checked
             if ((signalSide === 'long' && tradeSize > 0) || (signalSide === 'short' && tradeSize < 0)) {
                 // Found a potential match (simplistic: first one found in window)
                 // More complex logic could find the closest one or sum up trades if order filled partially
@@ -155,9 +157,20 @@ export default function HistoryPage() {
                         signal.holdability_details ?? null,
                         signal.market_context ?? null
                     );
-                    // Find matching trade
-                    const matchedTrade = findMatchingTrade(signal.time, positionStatus, tradeData);
-                    const slip = matchedTrade?.price && signal.price ? (parseFloat(matchedTrade.price) - signal.price) * (positionStatus === 'long' ? 1 : -1) : null;
+
+                    // Determine the side to look for based on the recommendation action
+                    let sideToMatch: 'long' | 'short' | '空仓' = '空仓';
+                    if (recommendation.action.includes('开多') || recommendation.action.includes('平空')) {
+                        sideToMatch = 'long'; // Look for a buy trade (opening long or closing short)
+                    } else if (recommendation.action.includes('开空') || recommendation.action.includes('平多')) {
+                        sideToMatch = 'short'; // Look for a sell trade (opening short or closing long)
+                    }
+
+                    // Find matching trade using the recommended side
+                    const matchedTrade = findMatchingTrade(signal.time, sideToMatch, tradeData);
+                    // Calculate slippage based on the matched side
+                    const slip = matchedTrade?.price && signal.price ? (parseFloat(matchedTrade.price) - signal.price) * (sideToMatch === 'long' ? 1 : -1) : null;
+
 
                     return (
                       <tr key={signal.time || index} className="hover:bg-gray-700/40">
