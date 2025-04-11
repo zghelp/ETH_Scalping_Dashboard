@@ -28,7 +28,7 @@ export default function SignalCard(props: SignalProps) {
     isLoading,
     error,
     recommendation, // Keep recommendation if still used
-    recommendationReasons,
+    // recommendationReasons, // Removed as it's now part of recommendation object
   } = props;
 
   const timeStr = time ? new Date(time).toLocaleString('zh-CN', { hour12: false }) : '--';
