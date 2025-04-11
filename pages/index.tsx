@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import useSWR from 'swr';
-import { useEffect, useState, useRef } from 'react'; // Import hooks
+import { useEffect, useState, useRef } from 'react';
+import Link from 'next/link'; // Import Link
 import SignalCard from '@/components/SignalCard';
 import SignalDecision from '@/components/SignalDecision';
 // IndicatorChart import removed
@@ -101,7 +102,13 @@ export default function Home() {
       {/* Adjust max-width to accommodate wider card */}
       <main className="max-w-3xl mx-auto">
         {/* Set default text color for dark theme */}
-        <h1 className="text-2xl font-bold mb-4 text-center text-gray-100">🚀 ETH Scalping 策略助手</h1>
+        <div className="flex justify-center items-center mb-4 relative">
+             <h1 className="text-2xl font-bold text-center text-gray-100">🚀 ETH Scalping 策略助手</h1>
+             {/* Add link to history page */}
+             <Link href="/history" className="absolute right-0 text-sm text-blue-400 hover:text-blue-300">
+                 查看历史 &rarr;
+             </Link>
+        </div>
 
         {/* Pass data to SignalDecision based on its updated Props */}
         <SignalDecision
