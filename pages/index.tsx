@@ -144,7 +144,7 @@ export default function Home() {
           <IndicatorChart data={data.historical_data_1m} />
         </div> */}
 
-        <p className="text-center text-xs text-gray-400 mt-6">自动刷新每 60 秒 | Powered by Gate.io API</p>
+        <p className="text-center text-xs text-gray-400 mt-6">每 60 秒自动刷新 | Powered by Gate.io API</p>
 
         {/* Hidden Audio Element for Notifications */}
         {/* Ensure you have a sound file at /public/notification.mp3 */}
