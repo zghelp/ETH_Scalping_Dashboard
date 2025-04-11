@@ -235,13 +235,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // --- Save data to Vercel KV (Run asynchronously, don't block response) ---
         if (responseData.time) { // Only save if we have a valid signal time
             const signalTimestampMs = responseData.time;
-            // Calculate the timestamp for the beginning of the minute
             const minuteTimestampMs = Math.floor(signalTimestampMs / 60000) * 60000;
             const kvKey = `signal:${minuteTimestampMs}`; // Use minute-based key
 
+            // Read TTL from environment variable, default to 30 days
+            const ttlDays = parseInt(process.env.KV_HISTORY_TTL_DAYS || '30', 10);
+            const kvOptions: { ex?: number } = {};
+            let ttlLog = 'None (Permanent)';
+
+            if (!isNaN(ttlDays) && ttlDays > 0) {
+                kvOptions.ex = ttlDays * 24 * 60 * 60; // Calculate TTL in seconds
+                ttlLog = `${ttlDays} days`;
+            }
+
             // responseData already contains the precise signal time in responseData.time
-            kv.set(kvKey, JSON.stringify(responseData), { ex: 60 * 60 * 24 * 7 }) // Expires in 7 days
-              .then(() => console.log(`Saved signal data to KV with key: ${kvKey} (Original Time: ${signalTimestampMs})`))
+            kv.set(kvKey, JSON.stringify(responseData), kvOptions) // Pass options object (might be empty)
+              .then(() => console.log(`Saved signal data to KV with key: ${kvKey} (TTL: ${ttlLog}, Original Time: ${signalTimestampMs})`))
               .catch(kvError => console.error("Error saving data to Vercel KV:", kvError));
         } else {
              console.warn("Skipping KV save due to missing signal timestamp.");
