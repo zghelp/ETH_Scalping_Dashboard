@@ -6,9 +6,10 @@ import { generateProfessionalRecommendation, ActualPositionStatus } from '@/lib/
 
 // Define structure for Aggregated Trade data (matching backend)
 interface AggregatedTrade {
-    createTimeMs: number;
+    createTimeMs: number; // Precise MS time
+    minuteTimestampMs: number; // Time rounded down to minute
     contract: string;
-    orderId?: string;
+    // orderId?: string; // Removed
     size: number; // Sum of sizes
     avgPrice: number; // Volume-weighted average price
     role?: 'taker' | 'maker' | 'mixed';
@@ -57,7 +58,7 @@ export default function HistoryPage() {
   });
 
   // Fetch Aggregated Trade History
-   const { data: tradeData, error: tradeError, isLoading: isLoadingTrades } = useSWR<AggregatedTrade[]>('/api/trades', fetcher, { // Use AggregatedTrade type
+   const { data: tradeData, error: tradeError, isLoading: isLoadingTrades } = useSWR<AggregatedTrade[]>('/api/trades', fetcher, {
       refreshInterval: 5 * 60000 // Refresh trades less often
   });
 
@@ -163,7 +164,7 @@ export default function HistoryPage() {
                   <thead className="bg-gray-700/50">
                     <tr>
                       <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">聚合ID (首个)</th>
-                      <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">成交时间 (首个)</th>
+                      <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">成交时间 (精确)</th>
                       <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">方向</th>
                       <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">总数量</th>
                       <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">平均价格</th>
@@ -181,8 +182,8 @@ export default function HistoryPage() {
                         return (
                           <tr key={aggTrade.tradeIds[0] || aggTrade.createTimeMs} className="hover:bg-gray-700/40">
                             <td className="px-3 py-2 whitespace-nowrap text-gray-500">{aggTrade.tradeIds[0] ?? 'N/A'}</td>
-                            {/* Pass the correct MS timestamp */}
-                            <td className="px-3 py-2 whitespace-nowrap text-gray-400">{formatTime(tradeTimeMs)}</td>
+                            {/* Display the precise time */}
+                            <td className="px-3 py-2 whitespace-nowrap text-gray-400">{formatTime(aggTrade.createTimeMs)}</td>
                             <td className={`px-3 py-2 whitespace-nowrap font-medium ${sideColor}`}>{tradeSide}</td>
                             <td className="px-3 py-2 whitespace-nowrap text-gray-300">{Math.abs(aggTrade.size)}</td>
                             <td className="px-3 py-2 whitespace-nowrap text-gray-200">${aggTrade.avgPrice.toFixed(2)}</td>

@@ -10,9 +10,10 @@ const contract = 'ETH_USDT'; // Contract identifier
 
 // Define structure for aggregated trade
 interface AggregatedTrade {
-    createTimeMs: number; // Timestamp of the first trade in the group (ms)
+    createTimeMs: number; // Precise timestamp of the first trade in the group (ms)
+    minuteTimestampMs: number; // Timestamp rounded down to the start of the minute (ms)
     contract: string;
-    orderId?: string; // Keep orderId if available and consistent
+    // orderId?: string; // Removed
     size: number; // Sum of sizes (positive for long, negative for short)
     avgPrice: number; // Volume-weighted average price
     role?: 'taker' | 'maker' | 'mixed'; // Role might be mixed
@@ -51,15 +52,17 @@ function aggregateTrades(trades: FuturesTrade[]): AggregatedTrade[] {
                 const avgPrice = totalAbsSize > 0 ? totalValue / totalAbsSize : 0;
                 // Ensure firstTradeTime is an integer millisecond timestamp
                 const firstTradeTimeRaw = currentGroup[0].createTimeMs ?? (currentGroup[0].createTime ? currentGroup[0].createTime * 1000 : null);
-                const firstTradeTime = firstTradeTimeRaw ? Math.floor(firstTradeTimeRaw) : null;
+                const firstTradeTimeMs = firstTradeTimeRaw ? Math.floor(firstTradeTimeRaw) : null; // Precise MS
+                const minuteTimestampMs = firstTradeTimeMs ? Math.floor(firstTradeTimeMs / 60000) * 60000 : null; // Minute MS
                 // const roles = new Set(currentGroup.map(t => t.role)); // Remove role logic
                 // const role = roles.size > 1 ? 'mixed' : (currentGroup[0].role ?? undefined); // Remove role logic
 
-                if (firstTradeTime) { // Only add if we have a valid time
+                if (firstTradeTimeMs && minuteTimestampMs) { // Only add if we have valid times
                     aggregated.push({
-                        createTimeMs: firstTradeTime, // Assign the floored MS timestamp
+                        createTimeMs: firstTradeTimeMs, // Assign precise MS timestamp
+                        minuteTimestampMs: minuteTimestampMs, // Assign minute MS timestamp
                         contract: currentGroup[0].contract!,
-                        // orderId: currentGroup[0].orderId, // Remove orderId as it doesn't exist on type
+                        // orderId: currentGroup[0].orderId, // Remove orderId
                         size: totalSize,
                         avgPrice: avgPrice,
                         // role: role, // Remove role
@@ -80,13 +83,15 @@ function aggregateTrades(trades: FuturesTrade[]): AggregatedTrade[] {
         const avgPrice = totalAbsSize > 0 ? totalValue / totalAbsSize : 0;
         // Ensure firstTradeTime is an integer millisecond timestamp
         const firstTradeTimeRaw = currentGroup[0].createTimeMs ?? (currentGroup[0].createTime ? currentGroup[0].createTime * 1000 : null);
-        const firstTradeTime = firstTradeTimeRaw ? Math.floor(firstTradeTimeRaw) : null;
+        const firstTradeTimeMs = firstTradeTimeRaw ? Math.floor(firstTradeTimeRaw) : null; // Precise MS
+        const minuteTimestampMs = firstTradeTimeMs ? Math.floor(firstTradeTimeMs / 60000) * 60000 : null; // Minute MS
         // const roles = new Set(currentGroup.map(t => t.role)); // Remove role logic
         // const role = roles.size > 1 ? 'mixed' : (currentGroup[0].role ?? undefined); // Remove role logic
 
-         if (firstTradeTime) {
+         if (firstTradeTimeMs && minuteTimestampMs) {
              aggregated.push({
-                 createTimeMs: firstTradeTime, // Assign the floored MS timestamp
+                 createTimeMs: firstTradeTimeMs, // Assign precise MS timestamp
+                 minuteTimestampMs: minuteTimestampMs, // Assign minute MS timestamp
                  contract: currentGroup[0].contract!,
                  // orderId: currentGroup[0].orderId, // Remove orderId
                  size: totalSize,
