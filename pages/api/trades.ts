@@ -50,12 +50,11 @@ function aggregateTrades(trades: FuturesTrade[]): AggregatedTrade[] {
                 const totalValue = currentGroup.reduce((sum, t) => sum + Math.abs(t.size ?? 0) * parseFloat(t.price ?? '0'), 0);
                 const totalAbsSize = currentGroup.reduce((sum, t) => sum + Math.abs(t.size ?? 0), 0);
                 const avgPrice = totalAbsSize > 0 ? totalValue / totalAbsSize : 0;
-                // Ensure firstTradeTime is an integer millisecond timestamp
-                const firstTradeTimeRaw = currentGroup[0].createTimeMs ?? (currentGroup[0].createTime ? currentGroup[0].createTime * 1000 : null);
-                const firstTradeTimeMs = firstTradeTimeRaw ? Math.floor(firstTradeTimeRaw) : null; // Precise MS
+                // Correctly calculate integer MS timestamp from seconds (trade.createTime)
+                const firstTradeTimeSeconds = currentGroup[0].createTime; // Use createTime (seconds)
+                const firstTradeTimeMs = firstTradeTimeSeconds ? Math.floor(firstTradeTimeSeconds * 1000) : null; // Precise MS
                 const minuteTimestampMs = firstTradeTimeMs ? Math.floor(firstTradeTimeMs / 60000) * 60000 : null; // Minute MS
-                // const roles = new Set(currentGroup.map(t => t.role)); // Remove role logic
-                // const role = roles.size > 1 ? 'mixed' : (currentGroup[0].role ?? undefined); // Remove role logic
+                // Role logic already removed
 
                 if (firstTradeTimeMs && minuteTimestampMs) { // Only add if we have valid times
                     aggregated.push({
@@ -81,12 +80,11 @@ function aggregateTrades(trades: FuturesTrade[]): AggregatedTrade[] {
         const totalValue = currentGroup.reduce((sum, t) => sum + Math.abs(t.size ?? 0) * parseFloat(t.price ?? '0'), 0);
         const totalAbsSize = currentGroup.reduce((sum, t) => sum + Math.abs(t.size ?? 0), 0);
         const avgPrice = totalAbsSize > 0 ? totalValue / totalAbsSize : 0;
-        // Ensure firstTradeTime is an integer millisecond timestamp
-        const firstTradeTimeRaw = currentGroup[0].createTimeMs ?? (currentGroup[0].createTime ? currentGroup[0].createTime * 1000 : null);
-        const firstTradeTimeMs = firstTradeTimeRaw ? Math.floor(firstTradeTimeRaw) : null; // Precise MS
+        // Correctly calculate integer MS timestamp from seconds (trade.createTime)
+        const firstTradeTimeSeconds = currentGroup[0].createTime; // Use createTime (seconds)
+        const firstTradeTimeMs = firstTradeTimeSeconds ? Math.floor(firstTradeTimeSeconds * 1000) : null; // Precise MS
         const minuteTimestampMs = firstTradeTimeMs ? Math.floor(firstTradeTimeMs / 60000) * 60000 : null; // Minute MS
-        // const roles = new Set(currentGroup.map(t => t.role)); // Remove role logic
-        // const role = roles.size > 1 ? 'mixed' : (currentGroup[0].role ?? undefined); // Remove role logic
+        // Role logic already removed
 
          if (firstTradeTimeMs && minuteTimestampMs) {
              aggregated.push({
