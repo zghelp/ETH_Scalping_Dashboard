@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { FuturesApi, ApiClient } from 'gate-api';
+import { FuturesApi, ApiClient, FuturesTrade } from 'gate-api'; // Import FuturesTrade type
 
 // Initialize Gate.io API Client (Ensure environment variables are set)
 const client = new ApiClient();
@@ -8,34 +8,121 @@ const futuresApi = new FuturesApi(client);
 const settle = 'usdt'; // Settle currency
 const contract = 'ETH_USDT'; // Contract identifier
 
+// Define structure for aggregated trade
+interface AggregatedTrade {
+    createTimeMs: number; // Timestamp of the first trade in the group (ms)
+    contract: string;
+    orderId?: string; // Keep orderId if available and consistent
+    size: number; // Sum of sizes (positive for long, negative for short)
+    avgPrice: number; // Volume-weighted average price
+    role?: 'taker' | 'maker' | 'mixed'; // Role might be mixed
+    tradeIds: number[]; // List of original trade IDs included
+}
+
+// Function to aggregate trades that happen close together (e.g., within 1 second)
+function aggregateTrades(trades: FuturesTrade[]): AggregatedTrade[] {
+    if (!trades || trades.length === 0) {
+        return [];
+    }
+
+    // Sort by time first to ensure proper grouping
+    const sortedTrades = trades.sort((a, b) => (a.createTimeMs ?? a.createTime ?? 0) - (b.createTimeMs ?? b.createTime ?? 0));
+
+    const aggregated: AggregatedTrade[] = [];
+    let currentGroup: FuturesTrade[] = [];
+    const aggregationWindowMs = 1000; // Aggregate trades within 1 second of each other
+
+    for (const trade of sortedTrades) {
+        const tradeTimeMs = trade.createTimeMs ?? (trade.createTime ? trade.createTime * 1000 : null);
+        if (!tradeTimeMs || trade.price === undefined || trade.size === undefined) continue; // Skip invalid trades
+
+        if (currentGroup.length === 0) {
+            currentGroup.push(trade);
+        } else {
+            const firstTradeInGroupTimeMs = currentGroup[0].createTimeMs ?? (currentGroup[0].createTime ? currentGroup[0].createTime * 1000 : null);
+            // Check if current trade is within the window of the *first* trade in the group
+            if (firstTradeInGroupTimeMs && (tradeTimeMs - firstTradeInGroupTimeMs <= aggregationWindowMs)) {
+                currentGroup.push(trade);
+            } else {
+                // Finalize the previous group
+                const totalSize = currentGroup.reduce((sum, t) => sum + (t.size ?? 0), 0);
+                const totalValue = currentGroup.reduce((sum, t) => sum + Math.abs(t.size ?? 0) * parseFloat(t.price ?? '0'), 0);
+                const totalAbsSize = currentGroup.reduce((sum, t) => sum + Math.abs(t.size ?? 0), 0);
+                const avgPrice = totalAbsSize > 0 ? totalValue / totalAbsSize : 0;
+                const firstTradeTime = currentGroup[0].createTimeMs ?? (currentGroup[0].createTime ? currentGroup[0].createTime * 1000 : null);
+                const roles = new Set(currentGroup.map(t => t.role));
+                const role = roles.size > 1 ? 'mixed' : (currentGroup[0].role ?? undefined);
+
+                if (firstTradeTime) { // Only add if we have a valid time
+                    aggregated.push({
+                        createTimeMs: firstTradeTime,
+                        contract: currentGroup[0].contract!,
+                        orderId: currentGroup[0].orderId, // Assuming orderId is same for partial fills
+                        size: totalSize,
+                        avgPrice: avgPrice,
+                        role: role,
+                        tradeIds: currentGroup.map(t => t.id!).filter(id => id !== undefined),
+                    });
+                }
+                // Start a new group with the current trade
+                currentGroup = [trade];
+            }
+        }
+    }
+
+     // Finalize the last group
+     if (currentGroup.length > 0) {
+        const totalSize = currentGroup.reduce((sum, t) => sum + (t.size ?? 0), 0);
+        const totalValue = currentGroup.reduce((sum, t) => sum + Math.abs(t.size ?? 0) * parseFloat(t.price ?? '0'), 0);
+        const totalAbsSize = currentGroup.reduce((sum, t) => sum + Math.abs(t.size ?? 0), 0);
+        const avgPrice = totalAbsSize > 0 ? totalValue / totalAbsSize : 0;
+        const firstTradeTime = currentGroup[0].createTimeMs ?? (currentGroup[0].createTime ? currentGroup[0].createTime * 1000 : null);
+        const roles = new Set(currentGroup.map(t => t.role));
+        const role = roles.size > 1 ? 'mixed' : (currentGroup[0].role ?? undefined);
+
+         if (firstTradeTime) {
+             aggregated.push({
+                 createTimeMs: firstTradeTime,
+                 contract: currentGroup[0].contract!,
+                 orderId: currentGroup[0].orderId,
+                 size: totalSize,
+                 avgPrice: avgPrice,
+                 role: role,
+                 tradeIds: currentGroup.map(t => t.id!).filter(id => id !== undefined),
+             });
+         }
+    }
+
+
+    return aggregated;
+}
+
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     console.log("Fetching futures trades for:", contract);
-    // Fetch the latest 100 trades for the specified contract
-    // You might need to adjust parameters like 'limit' or add 'offset'/'from'/'to' for pagination/time range
     const options = {
         contract: contract,
-        limit: 100, // Get latest 100 trades
-        // offset: 0, // For pagination
-        // from: undefined, // Start timestamp (optional)
-        // to: undefined, // End timestamp (optional)
+        limit: 1000, // Fetch more trades to increase chance of finding matches & for aggregation
     };
-    // Corrected call signature: listFuturesTrades(settle, contract, options)
     const result = await futuresApi.listFuturesTrades(settle, contract, options);
-    console.log(`Successfully fetched ${result.body.length} trades.`);
+    console.log(`Successfully fetched ${result.body.length} raw trades.`);
 
-    // Return the list of trades
-    res.status(200).json(result.body);
+    // Aggregate the trades
+    const aggregatedTrades = aggregateTrades(result.body);
+    console.log(`Aggregated into ${aggregatedTrades.length} trade groups.`);
+
+    // Return the aggregated list of trades
+    res.status(200).json(aggregatedTrades);
 
   } catch (error: any) {
-    console.error("Error fetching futures trades from Gate.io:", error);
+    console.error("Error fetching/aggregating futures trades from Gate.io:", error);
     let errorMsg = 'Failed to fetch trades';
     let statusCode = 500;
 
-    // Try to extract more specific error info from Gate.io response
     if (error.response?.body?.label) {
         errorMsg = `Gate.io API Error: ${error.response.body.label} - ${error.response.body.message}`;
-        statusCode = error.status || 500; // Use status from error if available
+        statusCode = error.status || 500;
     } else if (error.message) {
         errorMsg = error.message;
         statusCode = error.status || 500;

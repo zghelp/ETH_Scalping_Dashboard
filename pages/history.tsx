@@ -2,19 +2,17 @@ import Head from 'next/head';
 import useSWR from 'swr';
 import Link from 'next/link';
 import type { SignalProps, ScoreDetail, PositionInfoFromAPI } from '@/lib/types'; // Import types
-import { generateProfessionalRecommendation, ActualPositionStatus } from '@/lib/recommendation'; // Import recommendation logic
+import { generateProfessionalRecommendation, ActualPositionStatus } from '@/lib/recommendation';
 
-// Define structure for Gate.io Trade data
-interface FuturesTrade {
-    id?: number;
-    createTime?: number; // Timestamp in seconds
-    createTimeMs?: number; // Timestamp in milliseconds
-    contract?: string;
+// Define structure for Aggregated Trade data (matching backend)
+interface AggregatedTrade {
+    createTimeMs: number;
+    contract: string;
     orderId?: string;
-    size?: number; // Positive for long, negative for short
-    price?: string;
-    role?: 'taker' | 'maker';
-    text?: string;
+    size: number; // Sum of sizes
+    avgPrice: number; // Volume-weighted average price
+    role?: 'taker' | 'maker' | 'mixed';
+    tradeIds: number[];
 }
 
 // Fetcher function for history and trades API
@@ -49,8 +47,8 @@ export default function HistoryPage() {
       refreshInterval: 60000 // Refresh history every minute
   });
 
-  // Fetch Trade History
-   const { data: tradeData, error: tradeError, isLoading: isLoadingTrades } = useSWR<FuturesTrade[]>('/api/trades', fetcher, {
+  // Fetch Aggregated Trade History
+   const { data: tradeData, error: tradeError, isLoading: isLoadingTrades } = useSWR<AggregatedTrade[]>('/api/trades', fetcher, { // Use AggregatedTrade type
       refreshInterval: 5 * 60000 // Refresh trades less often
   });
 
@@ -155,28 +153,29 @@ export default function HistoryPage() {
                 <table className="min-w-full divide-y divide-gray-700 bg-gray-800 text-xs">
                   <thead className="bg-gray-700/50">
                     <tr>
-                      <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">成交 ID</th>
-                      <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">成交时间</th>
+                      <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">聚合ID (首个)</th>
+                      <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">成交时间 (首个)</th>
                       <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">方向</th>
-                      <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">数量</th>
-                      <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">成交价格</th>
+                      <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">总数量</th>
+                      <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">平均价格</th>
+                      <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">包含成交数</th>
                       <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">角色</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-700">
-                    {tradeData.map((trade) => {
-                        const tradeTimeMs = trade.createTimeMs ?? (trade.createTime ? trade.createTime * 1000 : null);
-                        const tradeSide = (trade.size ?? 0) > 0 ? '买入' : (trade.size ?? 0) < 0 ? '卖出' : '未知';
+                    {tradeData.map((aggTrade) => { // Iterate over aggregated trades
+                        const tradeSide = aggTrade.size > 0 ? '买入' : aggTrade.size < 0 ? '卖出' : '未知';
                         const sideColor = tradeSide === '买入' ? 'text-green-400' : tradeSide === '卖出' ? 'text-red-400' : 'text-gray-300';
 
                         return (
-                          <tr key={trade.id} className="hover:bg-gray-700/40">
-                            <td className="px-3 py-2 whitespace-nowrap text-gray-500">{trade.id ?? 'N/A'}</td>
-                            <td className="px-3 py-2 whitespace-nowrap text-gray-400">{formatTime(tradeTimeMs)}</td>
+                          <tr key={aggTrade.tradeIds[0] || aggTrade.createTimeMs} className="hover:bg-gray-700/40"> {/* Use first trade ID or time as key */}
+                            <td className="px-3 py-2 whitespace-nowrap text-gray-500">{aggTrade.tradeIds[0] ?? 'N/A'}</td>
+                            <td className="px-3 py-2 whitespace-nowrap text-gray-400">{formatTime(aggTrade.createTimeMs)}</td>
                             <td className={`px-3 py-2 whitespace-nowrap font-medium ${sideColor}`}>{tradeSide}</td>
-                            <td className="px-3 py-2 whitespace-nowrap text-gray-300">{Math.abs(trade.size ?? 0)}</td>
-                            <td className="px-3 py-2 whitespace-nowrap text-gray-200">${parseFloat(trade.price ?? '0').toFixed(2)}</td>
-                            <td className="px-3 py-2 whitespace-nowrap text-gray-400">{trade.role ?? 'N/A'}</td>
+                            <td className="px-3 py-2 whitespace-nowrap text-gray-300">{Math.abs(aggTrade.size)}</td>
+                            <td className="px-3 py-2 whitespace-nowrap text-gray-200">${aggTrade.avgPrice.toFixed(2)}</td>
+                            <td className="px-3 py-2 whitespace-nowrap text-gray-400">{aggTrade.tradeIds.length}</td>
+                            <td className="px-3 py-2 whitespace-nowrap text-gray-400">{aggTrade.role ?? 'N/A'}</td>
                           </tr>
                         );
                     })}
