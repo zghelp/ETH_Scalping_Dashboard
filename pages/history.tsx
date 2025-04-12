@@ -93,6 +93,10 @@ export default function HistoryPage() {
   const isLoading = isLoadingHistory || isLoadingTrades;
   const error = historyError || tradeError;
 
+  // Read matching window from environment variable or default to 5 minutes
+  // Ensure correct access for browser environment
+  const tradeMatchWindowMinutes = parseInt(process.env.NEXT_PUBLIC_TRADE_MATCH_WINDOW_MINUTES || '5', 10);
+
   // Log trade data for debugging
   console.log("HistoryPage tradeData:", tradeData);
   console.log("HistoryPage tradeError:", tradeError);
@@ -156,16 +160,22 @@ export default function HistoryPage() {
                     // Determine the side to look for based on the recommendation action
                     let sideToMatch: 'long' | 'short' | '空仓' = '空仓';
                     if (recommendation.action.includes('开多') || recommendation.action.includes('平空')) {
-                        sideToMatch = 'long'; // Look for a buy trade (opening long or closing short)
+                        sideToMatch = 'long'; // Look for a buy trade
                     } else if (recommendation.action.includes('开空') || recommendation.action.includes('平多')) {
-                        sideToMatch = 'short'; // Look for a sell trade (opening short or closing long)
+                        sideToMatch = 'short'; // Look for a sell trade
                     }
 
-                    // Find matching trade using the recommended side
-                    const matchedTrade = findMatchingTrade(signal.time, sideToMatch, tradeData);
+                    // --- Add Debug Logs ---
+                    console.log(`[Match Debug ${index}] Signal Time: ${signal.time} (${formatTime(signal.time)}), Side to Match: ${sideToMatch}`);
+
+                    // Find matching trade using the recommended side and configured window
+                    const matchedTrade = findMatchingTrade(signal.time, sideToMatch, tradeData, tradeMatchWindowMinutes);
+
+                    console.log(`[Match Debug ${index}] Matched Trade:`, matchedTrade); // Log the result
+                    // ----------------------
+
                     // Calculate slippage based on the matched side
                     const slip = matchedTrade?.price && signal.price ? (parseFloat(matchedTrade.price) - signal.price) * (sideToMatch === 'long' ? 1 : -1) : null;
-
 
                     return (
                       <tr key={signal.time || index} className="hover:bg-gray-700/40">
