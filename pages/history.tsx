@@ -54,14 +54,14 @@ const renderDetails = (details: ScoreDetail[] | null | undefined): string => {
     return details.filter(d => d.met).map(d => d.condition.split('(')[0].trim()).join(', ') || '-';
 };
 
-// --- Matching Logic (Based on Minute Timestamps & Configurable Window) ---
+// --- Matching Logic (Based on Minute Timestamps & Configurable Window - Ignores Direction) ---
 const findMatchingTrade = (
     signal: SignalProps, // Pass the whole signal object
-    sideToMatch: 'long' | 'short' | '空仓',
+    // sideToMatch: 'long' | 'short' | '空仓', // Direction check removed for now
     trades: AggregatedTrade[] | undefined,
     timeWindowMinutes: number
 ): AggregatedTrade | null => {
-    if (!signal.time || !trades || sideToMatch === '空仓') {
+    if (!signal.time || !trades) { // Removed sideToMatch check here
         return null;
     }
 
@@ -73,10 +73,8 @@ const findMatchingTrade = (
     for (const aggTrade of trades) {
         // Compare minute timestamps: trade must be in the same minute or later, but before the window ends
         if (aggTrade.minuteTimestampMs >= signalMinuteTimestampMs && aggTrade.minuteTimestampMs < matchEndTimeMs) {
-            // Check side
-            if ((sideToMatch === 'long' && aggTrade.size > 0) || (sideToMatch === 'short' && aggTrade.size < 0)) {
-                return aggTrade; // Found match
-            }
+            // If time matches, return the trade (ignoring direction)
+            return aggTrade;
         }
     }
     return null; // No match found
@@ -98,6 +96,7 @@ export default function HistoryPage() {
   const error = historyError || tradeError;
 
   // Read matching window from environment variable or default to 5 minutes
+  // Ensure correct access for browser environment
   const tradeMatchWindowMinutes = parseInt(process.env.NEXT_PUBLIC_TRADE_MATCH_WINDOW_MINUTES || '5', 10);
 
   // Log data for debugging
@@ -163,18 +162,19 @@ export default function HistoryPage() {
                             signal.market_context ?? null
                         );
 
-                        // Determine the side to look for based on the recommendation action
+                        // Determine the side to look for based on the recommendation action (still needed for slippage calc)
                         let sideToMatch: 'long' | 'short' | '空仓' = '空仓';
                         if (recommendation.action.includes('开多') || recommendation.action.includes('平空')) {
-                            sideToMatch = 'long'; // Look for a buy trade
+                            sideToMatch = 'long';
                         } else if (recommendation.action.includes('开空') || recommendation.action.includes('平多')) {
-                            sideToMatch = 'short'; // Look for a sell trade
+                            sideToMatch = 'short';
                         }
 
-                        // Find matching trade using minute timestamps and configured window
-                        const matchedTrade = findMatchingTrade(signal, sideToMatch, tradeData, tradeMatchWindowMinutes);
+                        // Find matching trade using minute timestamps and configured window (ignoring side for matching)
+                        const matchedTrade = findMatchingTrade(signal, sideToMatch, tradeData, tradeMatchWindowMinutes); // Pass sideToMatch even if unused in function, for potential future use or clarity
                         // Calculate slippage based on the matched side and avgPrice
                         const slip = matchedTrade && signal.price ? (matchedTrade.avgPrice - signal.price) * (sideToMatch === 'long' ? 1 : -1) : null;
+
 
                         return (
                           <tr key={signal.time || index} className="hover:bg-gray-700/40">
