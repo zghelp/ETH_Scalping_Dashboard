@@ -49,13 +49,15 @@ function aggregateTrades(trades: FuturesTrade[]): AggregatedTrade[] {
                 const totalValue = currentGroup.reduce((sum, t) => sum + Math.abs(t.size ?? 0) * parseFloat(t.price ?? '0'), 0);
                 const totalAbsSize = currentGroup.reduce((sum, t) => sum + Math.abs(t.size ?? 0), 0);
                 const avgPrice = totalAbsSize > 0 ? totalValue / totalAbsSize : 0;
-                const firstTradeTime = currentGroup[0].createTimeMs ?? (currentGroup[0].createTime ? currentGroup[0].createTime * 1000 : null);
+                // Ensure firstTradeTime is an integer millisecond timestamp
+                const firstTradeTimeRaw = currentGroup[0].createTimeMs ?? (currentGroup[0].createTime ? currentGroup[0].createTime * 1000 : null);
+                const firstTradeTime = firstTradeTimeRaw ? Math.floor(firstTradeTimeRaw) : null;
                 // const roles = new Set(currentGroup.map(t => t.role)); // Remove role logic
                 // const role = roles.size > 1 ? 'mixed' : (currentGroup[0].role ?? undefined); // Remove role logic
 
                 if (firstTradeTime) { // Only add if we have a valid time
                     aggregated.push({
-                        createTimeMs: firstTradeTime,
+                        createTimeMs: firstTradeTime, // Assign the floored MS timestamp
                         contract: currentGroup[0].contract!,
                         // orderId: currentGroup[0].orderId, // Remove orderId as it doesn't exist on type
                         size: totalSize,
@@ -76,13 +78,15 @@ function aggregateTrades(trades: FuturesTrade[]): AggregatedTrade[] {
         const totalValue = currentGroup.reduce((sum, t) => sum + Math.abs(t.size ?? 0) * parseFloat(t.price ?? '0'), 0);
         const totalAbsSize = currentGroup.reduce((sum, t) => sum + Math.abs(t.size ?? 0), 0);
         const avgPrice = totalAbsSize > 0 ? totalValue / totalAbsSize : 0;
-        const firstTradeTime = currentGroup[0].createTimeMs ?? (currentGroup[0].createTime ? currentGroup[0].createTime * 1000 : null);
+        // Ensure firstTradeTime is an integer millisecond timestamp
+        const firstTradeTimeRaw = currentGroup[0].createTimeMs ?? (currentGroup[0].createTime ? currentGroup[0].createTime * 1000 : null);
+        const firstTradeTime = firstTradeTimeRaw ? Math.floor(firstTradeTimeRaw) : null;
         // const roles = new Set(currentGroup.map(t => t.role)); // Remove role logic
         // const role = roles.size > 1 ? 'mixed' : (currentGroup[0].role ?? undefined); // Remove role logic
 
          if (firstTradeTime) {
              aggregated.push({
-                 createTimeMs: firstTradeTime,
+                 createTimeMs: firstTradeTime, // Assign the floored MS timestamp
                  contract: currentGroup[0].contract!,
                  // orderId: currentGroup[0].orderId, // Remove orderId
                  size: totalSize,

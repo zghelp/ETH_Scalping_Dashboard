@@ -29,9 +29,9 @@ const fetcher = (url: string): Promise<any> => fetch(url).then(res => {
 
 // Helper to format timestamp (always expects milliseconds)
 const formatTime = (timestampMs: number | null | undefined): string => {
-    console.log("formatTime received:", timestampMs); // Log input value
-    if (!timestampMs || isNaN(timestampMs)) { // Added isNaN check
-        console.log("formatTime returning N/A due to invalid input");
+    // console.log("formatTime received:", timestampMs); // Remove debug log
+    if (!timestampMs || isNaN(timestampMs)) {
+        // console.log("formatTime returning N/A due to invalid input"); // Remove debug log
         return 'N/A';
     }
     try {
