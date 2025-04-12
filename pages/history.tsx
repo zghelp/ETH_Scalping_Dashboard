@@ -29,8 +29,17 @@ const fetcher = (url: string): Promise<any> => fetch(url).then(res => {
 
 // Helper to format timestamp (always expects milliseconds)
 const formatTime = (timestampMs: number | null | undefined): string => {
-    if (!timestampMs) return 'N/A';
-    return new Date(timestampMs).toLocaleString('zh-CN', { dateStyle: 'short', timeStyle: 'medium', hour12: false });
+    console.log("formatTime received:", timestampMs); // Log input value
+    if (!timestampMs || isNaN(timestampMs)) { // Added isNaN check
+        console.log("formatTime returning N/A due to invalid input");
+        return 'N/A';
+    }
+    try {
+        return new Date(timestampMs).toLocaleString('zh-CN', { dateStyle: 'short', timeStyle: 'medium', hour12: false });
+    } catch (e) {
+        console.error("Error formatting time:", e, "Input:", timestampMs);
+        return 'Error';
+    }
 };
 
 // Helper to render score details concisely
