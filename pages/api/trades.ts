@@ -57,7 +57,7 @@ function aggregateTrades(trades: FuturesTrade[]): AggregatedTrade[] {
                     aggregated.push({
                         createTimeMs: firstTradeTime,
                         contract: currentGroup[0].contract!,
-                        orderId: currentGroup[0].orderId, // Assuming orderId is same for partial fills
+                        // orderId: currentGroup[0].orderId, // Remove orderId as it doesn't exist on type
                         size: totalSize,
                         avgPrice: avgPrice,
                         // role: role, // Remove role
@@ -84,7 +84,7 @@ function aggregateTrades(trades: FuturesTrade[]): AggregatedTrade[] {
              aggregated.push({
                  createTimeMs: firstTradeTime,
                  contract: currentGroup[0].contract!,
-                 orderId: currentGroup[0].orderId,
+                 // orderId: currentGroup[0].orderId, // Remove orderId
                  size: totalSize,
                  avgPrice: avgPrice,
                  // role: role, // Remove role
