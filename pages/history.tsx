@@ -81,6 +81,7 @@ const findMatchingTrade = (
 };
 
 
+
 export default function HistoryPage() {
   // Fetch Signal History
   const { data: historyData, error: historyError, isLoading: isLoadingHistory } = useSWR<SignalProps[]>('/api/history', fetcher, {
