@@ -20,6 +20,7 @@ interface AggregatedTrade {
     tradeIds: number[]; // List of original trade IDs included
 }
 
+
 // Function to aggregate trades that happen close together (e.g., within 1 second)
 function aggregateTrades(trades: FuturesTrade[]): AggregatedTrade[] {
     if (!trades || trades.length === 0) {
