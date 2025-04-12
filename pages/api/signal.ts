@@ -232,39 +232,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
         };
 
-        // --- Save data to Vercel KV (Run asynchronously, don't block response) ---
-        if (responseData.time) { // Only save if we have a valid signal time
-            const signalTimestampMs = responseData.time;
-            const minuteTimestampMs = Math.floor(signalTimestampMs / 60000) * 60000;
-            const kvKey = `signal:${minuteTimestampMs}`; // Use minute-based key
+            // --- Save data to Vercel KV using Sorted Set ---
+            if (responseData.time) {
+                const signalTimestampMs = responseData.time;
+                const sortedSetKey = 'signal_history'; // Key for the sorted set
+                const maxHistoryItems = 1000; // Keep latest 1000 records (adjust as needed)
 
-            // Read TTL from environment variable, default to 30 days
-            const ttlDays = parseInt(process.env.KV_HISTORY_TTL_DAYS || '30', 10);
-            const kvOptions: { ex?: number } = {};
-            let ttlLog = 'None (Permanent)';
+                // Use timestamp as score, stringified data as member
+                const score = signalTimestampMs;
+                const member = JSON.stringify(responseData);
 
-            if (!isNaN(ttlDays) && ttlDays > 0) {
-                kvOptions.ex = ttlDays * 24 * 60 * 60; // Calculate TTL in seconds
-                ttlLog = `${ttlDays} days`;
-            }
+                // Read TTL from environment variable, default to 30 days
+                const ttlDays = parseInt(process.env.KV_HISTORY_TTL_DAYS || '30', 10);
+                let prune = false;
+                let pruneTimestampMs = 0;
+                let ttlLog = 'None (Permanent)';
 
-            // responseData already contains the precise signal time in responseData.time
-            // Use direct 'ex' option syntax if ttlDays > 0
-            if (ttlDays > 0 && kvOptions.ex) {
-                 kv.set(kvKey, JSON.stringify(responseData), { ex: kvOptions.ex })
-                   .then(() => console.log(`Saved signal data to KV with key: ${kvKey} (TTL: ${ttlLog}, Original Time: ${signalTimestampMs})`))
-                   .catch(kvError => console.error("Error saving data to Vercel KV:", kvError));
+                if (!isNaN(ttlDays) && ttlDays > 0) {
+                    prune = true;
+                    pruneTimestampMs = Date.now() - (ttlDays * 24 * 60 * 60 * 1000);
+                    ttlLog = `${ttlDays} days`;
+                }
+
+
+                // Use a pipeline for atomic add and prune by score (timestamp)
+                const pipe = kv.pipeline();
+                pipe.zadd(sortedSetKey, { score, member });
+                if (prune) {
+                    // Remove entries with score (timestamp) older than the calculated TTL
+                    pipe.zremrangebyscore(sortedSetKey, '-inf', pruneTimestampMs);
+                }
+
+                pipe.exec()
+                    .then((results) => {
+                        const removedCount = prune ? (results[1] ?? 0) : 0; // Get remove count only if prune was executed
+                        console.log(`Added signal (Time: ${signalTimestampMs}) to sorted set ${sortedSetKey}. Pruned ${removedCount} entries (TTL: ${ttlLog}).`);
+                    })
+                    .catch(kvError => console.error("Error saving/pruning sorted set in Vercel KV:", kvError));
+
             } else {
-                 // Save without expiration if ttlDays <= 0
-                 kv.set(kvKey, JSON.stringify(responseData))
-                   .then(() => console.log(`Saved signal data to KV with key: ${kvKey} (TTL: ${ttlLog}, Original Time: ${signalTimestampMs})`))
-                   .catch(kvError => console.error("Error saving data to Vercel KV:", kvError));
+                console.warn("Skipping KV save due to missing signal timestamp.");
             }
-        } else {
-             console.warn("Skipping KV save due to missing signal timestamp.");
-        }
 
-        // --- Send Response ---
+            // --- Send Response ---
         res.status(200).json(responseData);
 
     } catch (err: any) {

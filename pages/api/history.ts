@@ -3,46 +3,44 @@ import { kv } from '@vercel/kv';
 import type { SignalProps } from '@/lib/types'; // Use SignalProps for data structure
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const sortedSetKey = 'signal_history';
+  const count = 50; // Number of recent items to fetch (can adjust)
+
   try {
-    console.log("Scanning keys with pattern 'signal:*'");
-    const allSignalKeys: string[] = [];
-    // Use scanIterator to get all keys matching the pattern
-    for await (const key of kv.scanIterator({ match: 'signal:*' })) {
-      allSignalKeys.push(key);
-    }
-    console.log(`Found ${allSignalKeys.length} total keys.`);
+    console.log(`Fetching latest ${count} items from sorted set: ${sortedSetKey}`);
 
-    // Sort keys by timestamp (descending) to get the latest ones
-    const sortedKeysData = allSignalKeys
-      .map(key => {
-          const timestampStr = key.split(':')[1];
-          // Add basic validation for timestamp parsing
-          if (!timestampStr) return null;
-          const timestamp = parseInt(timestampStr, 10);
-          return !isNaN(timestamp) ? { key, timestamp } : null;
-      })
-      .filter(item => item !== null) // Filter out keys with invalid timestamps or format
-      .sort((a, b) => b!.timestamp - a!.timestamp); // Sort valid items
+    // Fetch latest 'count' members (which are JSON strings) using zrange with rev:true
+    // Scores (timestamps) are not needed here, just the members
+    const historyStrings = await kv.zrange(sortedSetKey, 0, count - 1, { rev: true });
 
-    // Get the latest N keys (Reduce further to 20 to avoid timeout)
-    const latestKeys = sortedKeysData.slice(0, 20).map(item => item!.key);
-    console.log(`Selected latest ${latestKeys.length} keys:`, latestKeys);
+    console.log(`Retrieved ${historyStrings.length} items from sorted set.`);
 
-    if (latestKeys.length === 0) {
-      console.log("No valid keys selected, returning empty array.");
-      return res.status(200).json([]);
+    if (historyStrings.length === 0) {
+        return res.status(200).json([]);
     }
 
-    // Fetch data for the latest keys using mget
-    console.log("Fetching data for selected keys using mget...");
-    // Use generic type <(SignalProps | null)[]> for mget result
-    const historyDataObjects = await kv.mget<(SignalProps | null)[]>(...latestKeys);
-    console.log(`Raw data fetched from KV via mget (count: ${historyDataObjects.length}):`, historyDataObjects);
+    // Parse the JSON strings
+    let parseErrors = 0;
+    const historyData: SignalProps[] = historyStrings
+        .map((item, index) => {
+            try {
+                // Ensure item is a string before parsing (zrange returns members directly)
+                if (typeof item === 'string') {
+                    return JSON.parse(item);
+                } else {
+                     console.warn(`Item at index ${index} from zrange was not a string:`, item);
+                     return null;
+                }
+            } catch (e) {
+                parseErrors++;
+                console.error(`Error parsing history data from zrange at index ${index}:`, e);
+                console.error(`Problematic raw item:`, item); // Log the item that failed parsing
+                return null;
+            }
+        })
+        .filter((item): item is SignalProps => item !== null); // Type guard to filter nulls
 
-    // Filter out any null results (e.g., key expired between scan and mget, or failed parse previously)
-    const historyData: SignalProps[] = historyDataObjects.filter((item): item is SignalProps => item !== null);
-
-    console.log(`Retrieved ${historyData.length} valid history items from KV.`);
+    console.log(`Successfully parsed ${historyData.length} history items. Encountered ${parseErrors} parsing errors.`);
     res.status(200).json(historyData);
 
   } catch (error: any) {
