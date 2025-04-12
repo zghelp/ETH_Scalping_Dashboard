@@ -260,7 +260,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 pipe.zadd(sortedSetKey, { score, member });
                 if (prune) {
                     // Remove entries with score (timestamp) older than the calculated TTL
-                    pipe.zremrangebyscore(sortedSetKey, '-inf', pruneTimestampMs);
+                    // Use Number.NEGATIVE_INFINITY for the min score boundary
+                    pipe.zremrangebyscore(sortedSetKey, Number.NEGATIVE_INFINITY, pruneTimestampMs);
                 }
 
                 pipe.exec()
