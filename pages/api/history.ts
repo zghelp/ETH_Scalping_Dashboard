@@ -24,8 +24,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .filter(item => item !== null) // Filter out keys with invalid timestamps or format
       .sort((a, b) => b!.timestamp - a!.timestamp); // Sort valid items
 
-    // Get the latest N keys (Reduce from 100 to 50 to avoid timeout)
-    const latestKeys = sortedKeysData.slice(0, 50).map(item => item!.key);
+    // Get the latest N keys (Reduce further to 20 to avoid timeout)
+    const latestKeys = sortedKeysData.slice(0, 20).map(item => item!.key);
     console.log(`Selected latest ${latestKeys.length} keys:`, latestKeys);
 
     if (latestKeys.length === 0) {
