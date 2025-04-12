@@ -50,8 +50,8 @@ function aggregateTrades(trades: FuturesTrade[]): AggregatedTrade[] {
                 const totalAbsSize = currentGroup.reduce((sum, t) => sum + Math.abs(t.size ?? 0), 0);
                 const avgPrice = totalAbsSize > 0 ? totalValue / totalAbsSize : 0;
                 const firstTradeTime = currentGroup[0].createTimeMs ?? (currentGroup[0].createTime ? currentGroup[0].createTime * 1000 : null);
-                const roles = new Set(currentGroup.map(t => t.role));
-                const role = roles.size > 1 ? 'mixed' : (currentGroup[0].role ?? undefined);
+                // const roles = new Set(currentGroup.map(t => t.role)); // Remove role logic
+                // const role = roles.size > 1 ? 'mixed' : (currentGroup[0].role ?? undefined); // Remove role logic
 
                 if (firstTradeTime) { // Only add if we have a valid time
                     aggregated.push({
@@ -60,7 +60,7 @@ function aggregateTrades(trades: FuturesTrade[]): AggregatedTrade[] {
                         orderId: currentGroup[0].orderId, // Assuming orderId is same for partial fills
                         size: totalSize,
                         avgPrice: avgPrice,
-                        role: role,
+                        // role: role, // Remove role
                         tradeIds: currentGroup.map(t => t.id!).filter(id => id !== undefined),
                     });
                 }
@@ -77,8 +77,8 @@ function aggregateTrades(trades: FuturesTrade[]): AggregatedTrade[] {
         const totalAbsSize = currentGroup.reduce((sum, t) => sum + Math.abs(t.size ?? 0), 0);
         const avgPrice = totalAbsSize > 0 ? totalValue / totalAbsSize : 0;
         const firstTradeTime = currentGroup[0].createTimeMs ?? (currentGroup[0].createTime ? currentGroup[0].createTime * 1000 : null);
-        const roles = new Set(currentGroup.map(t => t.role));
-        const role = roles.size > 1 ? 'mixed' : (currentGroup[0].role ?? undefined);
+        // const roles = new Set(currentGroup.map(t => t.role)); // Remove role logic
+        // const role = roles.size > 1 ? 'mixed' : (currentGroup[0].role ?? undefined); // Remove role logic
 
          if (firstTradeTime) {
              aggregated.push({
@@ -87,7 +87,7 @@ function aggregateTrades(trades: FuturesTrade[]): AggregatedTrade[] {
                  orderId: currentGroup[0].orderId,
                  size: totalSize,
                  avgPrice: avgPrice,
-                 role: role,
+                 // role: role, // Remove role
                  tradeIds: currentGroup.map(t => t.id!).filter(id => id !== undefined),
              });
          }

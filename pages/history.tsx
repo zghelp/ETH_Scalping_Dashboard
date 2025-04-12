@@ -159,7 +159,7 @@ export default function HistoryPage() {
                       <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">总数量</th>
                       <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">平均价格</th>
                       <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">包含成交数</th>
-                      <th scope="col" className="px-3 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">角色</th>
+                      {/* Removed Role column header */}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-700">
@@ -175,7 +175,7 @@ export default function HistoryPage() {
                             <td className="px-3 py-2 whitespace-nowrap text-gray-300">{Math.abs(aggTrade.size)}</td>
                             <td className="px-3 py-2 whitespace-nowrap text-gray-200">${aggTrade.avgPrice.toFixed(2)}</td>
                             <td className="px-3 py-2 whitespace-nowrap text-gray-400">{aggTrade.tradeIds.length}</td>
-                            <td className="px-3 py-2 whitespace-nowrap text-gray-400">{aggTrade.role ?? 'N/A'}</td>
+                            {/* Removed Role data cell */}
                           </tr>
                         );
                     })}
