@@ -173,13 +173,16 @@ export default function HistoryPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-700">
                     {tradeData.map((aggTrade) => { // Iterate over aggregated trades
+                        // Use createTimeMs directly as it's already in milliseconds
+                        const tradeTimeMs = aggTrade.createTimeMs;
                         const tradeSide = aggTrade.size > 0 ? '买入' : aggTrade.size < 0 ? '卖出' : '未知';
                         const sideColor = tradeSide === '买入' ? 'text-green-400' : tradeSide === '卖出' ? 'text-red-400' : 'text-gray-300';
 
                         return (
-                          <tr key={aggTrade.tradeIds[0] || aggTrade.createTimeMs} className="hover:bg-gray-700/40"> {/* Use first trade ID or time as key */}
+                          <tr key={aggTrade.tradeIds[0] || aggTrade.createTimeMs} className="hover:bg-gray-700/40">
                             <td className="px-3 py-2 whitespace-nowrap text-gray-500">{aggTrade.tradeIds[0] ?? 'N/A'}</td>
-                            <td className="px-3 py-2 whitespace-nowrap text-gray-400">{formatTime(aggTrade.createTimeMs)}</td>
+                            {/* Pass the correct MS timestamp */}
+                            <td className="px-3 py-2 whitespace-nowrap text-gray-400">{formatTime(tradeTimeMs)}</td>
                             <td className={`px-3 py-2 whitespace-nowrap font-medium ${sideColor}`}>{tradeSide}</td>
                             <td className="px-3 py-2 whitespace-nowrap text-gray-300">{Math.abs(aggTrade.size)}</td>
                             <td className="px-3 py-2 whitespace-nowrap text-gray-200">${aggTrade.avgPrice.toFixed(2)}</td>
