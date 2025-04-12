@@ -258,10 +258,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 // Use a pipeline for atomic add and prune by score (timestamp)
                 const pipe = kv.pipeline();
                 pipe.zadd(sortedSetKey, { score, member });
-                if (prune) {
+                // Ensure pruneTimestampMs is a valid number before pruning
+                if (prune && !isNaN(pruneTimestampMs)) {
                     // Remove entries with score (timestamp) older than the calculated TTL
-                    // Use Number.NEGATIVE_INFINITY for the min score boundary
                     pipe.zremrangebyscore(sortedSetKey, Number.NEGATIVE_INFINITY, pruneTimestampMs);
+                } else if (prune) {
+                     console.warn(`Pruning skipped because pruneTimestampMs was invalid: ${pruneTimestampMs}`);
                 }
 
                 pipe.exec()

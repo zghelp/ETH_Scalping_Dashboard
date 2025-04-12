@@ -19,28 +19,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(200).json([]);
     }
 
-    // Parse the JSON strings
-    let parseErrors = 0;
+    // @vercel/kv zrange already returns parsed objects (or null if parsing failed on their end)
+    // Filter out any nulls or non-objects directly
     const historyData: SignalProps[] = historyStrings
-        .map((item, index) => {
-            try {
-                // Ensure item is a string before parsing (zrange returns members directly)
-                if (typeof item === 'string') {
-                    return JSON.parse(item);
-                } else {
-                     console.warn(`Item at index ${index} from zrange was not a string:`, item);
-                     return null;
-                }
-            } catch (e) {
-                parseErrors++;
-                console.error(`Error parsing history data from zrange at index ${index}:`, e);
-                console.error(`Problematic raw item:`, item); // Log the item that failed parsing
-                return null;
+        .filter((item): item is SignalProps => {
+            if (item === null || typeof item !== 'object') {
+                console.warn("Filtered out invalid item from KV zrange result:", item);
+                return false;
             }
-        })
-        .filter((item): item is SignalProps => item !== null); // Type guard to filter nulls
+            // Optional: Add more checks if needed to ensure it matches SignalProps structure
+            return true;
+        });
 
-    console.log(`Successfully parsed ${historyData.length} history items. Encountered ${parseErrors} parsing errors.`);
+    console.log(`Retrieved ${historyData.length} valid history items from KV.`);
     res.status(200).json(historyData);
 
   } catch (error: any) {
