@@ -57,7 +57,7 @@ const renderDetails = (details: ScoreDetail[] | null | undefined): string => {
 // --- Matching Logic (Based on Minute Timestamps & Configurable Window - Ignores Direction) ---
 const findMatchingTrade = (
     signal: SignalProps, // Pass the whole signal object
-    // sideToMatch: 'long' | 'short' | '空仓', // Direction check removed for now
+    sideToMatch: 'long' | 'short' | '空仓', // Direction check removed for now
     trades: AggregatedTrade[] | undefined,
     timeWindowMinutes: number
 ): AggregatedTrade | null => {
